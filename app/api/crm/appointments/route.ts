@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data, count, page, limit });
   } catch (error) {
     console.error('Error fetching appointments:', error);
-    return NextResponse.json({ error: 'Failed to fetch appointments' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to fetch appointments';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -59,6 +60,14 @@ export async function POST(request: NextRequest) {
 
     const body: CreateAppointmentRequest = await request.json();
 
+    // Validate required fields
+    if (!body.patient_id || !body.appointment_date || !body.appointment_type) {
+      return NextResponse.json(
+        { error: 'Missing required fields: patient_id, appointment_date, appointment_type' },
+        { status: 400 }
+      );
+    }
+
     const { data: userData } = await supabaseServer
       .from('users')
       .select('id')
@@ -67,6 +76,17 @@ export async function POST(request: NextRequest) {
 
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Validate patient exists
+    const { data: patientData, error: patientError } = await supabaseServer
+      .from('patients')
+      .select('id')
+      .eq('id', body.patient_id)
+      .single();
+
+    if (patientError || !patientData) {
+      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
     }
 
     const appointmentData = {
@@ -81,7 +101,10 @@ export async function POST(request: NextRequest) {
       .insert([appointmentData])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
     await writeAuditEntry({
       actor: user,
       action: 'appointment.created',
@@ -92,7 +115,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: data[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating appointment:', error);
-    return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create appointment';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -118,7 +142,10 @@ export async function PUT(request: NextRequest) {
       .eq('id', appointmentId)
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
     await writeAuditEntry({
       actor: user,
       action: 'appointment.updated',
@@ -129,7 +156,8 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ data: data[0] });
   } catch (error) {
     console.error('Error updating appointment:', error);
-    return NextResponse.json({ error: 'Failed to update appointment' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to update appointment';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -152,7 +180,10 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('id', appointmentId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase delete error:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
     await writeAuditEntry({
       actor: user,
       action: 'appointment.deleted',
@@ -162,6 +193,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ message: 'Appointment deleted successfully' });
   } catch (error) {
     console.error('Error deleting appointment:', error);
-    return NextResponse.json({ error: 'Failed to delete appointment' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to delete appointment';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -4,6 +4,13 @@ import { writeAuditEntry } from '@/lib/audit/write-audit-entry';
 import { supabaseServer } from '@/lib/supabase/server';
 import type { Appointment, CreateAppointmentRequest } from '@/lib/types/crm';
 
+// UUID validation function
+function isValidUUID(value: any): boolean {
+  if (!value || typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser();
@@ -68,6 +75,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate patient_id is a valid UUID
+    if (!isValidUUID(body.patient_id)) {
+      return NextResponse.json(
+        { error: 'Invalid patient_id format. Must be a valid UUID.' },
+        { status: 400 }
+      );
+    }
+
     const { data: userData } = await supabaseServer
       .from('users')
       .select('id')
@@ -89,8 +104,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
     }
 
-    const appointmentData = {
+    // Sanitize UUID fields - convert invalid UUIDs to null
+    const sanitizedBody = {
       ...body,
+      assigned_doctor: isValidUUID(body.assigned_doctor) ? body.assigned_doctor : null,
+      room_number: body.room_number || null,
+      notes: body.notes || null,
+    };
+
+    const appointmentData = {
+      ...sanitizedBody,
       status: 'Scheduled',
       duration_minutes: body.duration_minutes || 30,
       created_by: userData.id,

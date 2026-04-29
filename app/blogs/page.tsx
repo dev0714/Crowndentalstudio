@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FileImage, FileText, Plus, RefreshCcw, Trash2, Upload } from 'lucide-react';
+import { FileImage, FileText, Eye, ExternalLink, Plus, RefreshCcw, Trash2, Upload } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog/types';
 
 type BlogFormState = {
@@ -235,6 +236,12 @@ function BlogsContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/blog" target="_blank" rel="noreferrer">
+                <Eye className="w-4 h-4 mr-2" />
+                View Blog
+              </Link>
+            </Button>
             <Button variant="outline" onClick={fetchPosts} disabled={loading || saving}>
               <RefreshCcw className="w-4 h-4 mr-2" />
               Refresh
@@ -311,6 +318,14 @@ function BlogsContent() {
                           <span>
                             {new Date(post.published_at || post.updated_at).toLocaleDateString('en-ZA')}
                           </span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <Button variant="outline" size="sm" asChild className="h-8 rounded-xl">
+                            <Link href={`/blog/${post.slug}`} target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                              View
+                            </Link>
+                          </Button>
                         </div>
                       </button>
                     );
@@ -466,6 +481,14 @@ function BlogsContent() {
                 >
                   {saving ? 'Saving...' : selectedPost ? 'Save Changes' : 'Create Post'}
                 </Button>
+                {selectedPost && (
+                  <Button variant="outline" asChild disabled={saving || uploadingImage}>
+                    <Link href={`/blog/${selectedPost.slug}`} target="_blank" rel="noreferrer">
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Post
+                    </Link>
+                  </Button>
+                )}
                 {selectedPost && (
                   <Button
                     variant="destructive"

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Calendar, TrendingUp,
   FlaskConical, CreditCard, Shield, Activity, RefreshCcw,
-  Zap, Package, UserCheck, Tag, Lock, LogOut, ChevronRight, FileText,
+  Zap, Package, UserCheck, Tag, Lock, LogOut, ChevronRight, FileText, Settings2,
 } from 'lucide-react';
 import { logoutCurrentSession } from '@/lib/auth/session-client';
 import { usePortalSession } from '@/lib/auth/portal-session-context';
@@ -37,6 +37,7 @@ const NAV_GROUPS = [
       { label: 'Stock Control', href: '/stock',         icon: Package },
       { label: 'HR',            href: '/hr',            icon: UserCheck },
       { label: 'Pricing',       href: '/pricing',       icon: Tag },
+      { label: 'Settings',      href: '/settings',      icon: Settings2 },
       { label: 'Blog',          href: '/blogs',         icon: FileText },
       { label: 'Roles',         href: '/roles',         icon: Lock },
     ],

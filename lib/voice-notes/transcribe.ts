@@ -1,4 +1,5 @@
 import 'server-only';
+import { getOpenAiApiKey } from '@/lib/settings/openai-key';
 
 type TranscribeVoiceNoteInput = {
   file: File;
@@ -10,7 +11,7 @@ function cleanTranscript(value: string) {
 }
 
 export async function transcribeVoiceNoteAudio({ file, filename }: TranscribeVoiceNoteInput) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = await getOpenAiApiKey();
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is required to transcribe voice notes');
   }

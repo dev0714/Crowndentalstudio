@@ -333,9 +333,8 @@ function BlogsContent() {
                             </Link>
                           </Button>
                           <Button
-                            variant="destructive"
                             size="sm"
-                            className="h-8 rounded-xl"
+                            className="h-8 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
                             onClick={() => handleDelete(post)}
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-1.5" />
@@ -506,9 +505,9 @@ function BlogsContent() {
                 )}
                 {selectedPost && (
                   <Button
-                    variant="destructive"
                     onClick={() => handleDelete(selectedPost)}
                     disabled={saving || uploadingImage}
+                    className="bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete Post

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, Plus, RefreshCcw, Trash2 } from 'lucide-react';
+import { FileImage, FileText, Plus, RefreshCcw, Trash2, Upload } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog/types';
 
 type BlogFormState = {
@@ -36,10 +36,14 @@ function BlogsContent() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [form, setForm] = useState<BlogFormState>(EMPTY_FORM);
   const [search, setSearch] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFileName, setImageFileName] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string>('');
 
   const selectedPost = useMemo(
     () => posts.find((post) => post.id === selectedPostId) || null,
@@ -84,12 +88,18 @@ function BlogsContent() {
   const handleSelectPost = (post: BlogPost) => {
     setSelectedPostId(post.id);
     setForm(toFormState(post));
+    setCoverImageUrl(post.cover_image);
+    setImagePreview(post.cover_image);
+    setImageFileName(null);
     setError(null);
   };
 
   const handleNewPost = () => {
     setSelectedPostId(null);
     setForm(EMPTY_FORM);
+    setImagePreview(null);
+    setImageFileName(null);
+    setCoverImageUrl('');
     setError(null);
   };
 
@@ -121,7 +131,10 @@ function BlogsContent() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          cover_image: coverImageUrl || '/blog-default.jpg',
+        }),
       });
       const payload = await response.json().catch(() => ({}));
 
@@ -132,12 +145,50 @@ function BlogsContent() {
       const savedPost = payload.data as BlogPost;
       setSelectedPostId(savedPost.id);
       setForm(toFormState(savedPost));
+      setCoverImageUrl(savedPost.cover_image);
+      setImagePreview(savedPost.cover_image);
       await fetchPosts();
     } catch (err) {
       console.error('[v0] Error saving blog post:', err);
       setError(err instanceof Error ? err.message : 'Failed to save blog post');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!form.title.trim()) {
+      alert('Please add a title first so the image can be grouped correctly.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append('file', file);
+      uploadForm.append('title', form.title);
+
+      const response = await fetch('/api/crm/blog-posts/upload-image', {
+        method: 'POST',
+        credentials: 'include',
+        body: uploadForm,
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to upload image');
+      }
+
+      setCoverImageUrl(payload.data.url);
+      setImagePreview(payload.data.url);
+      setImageFileName(file.name);
+    } catch (err) {
+      console.error('[v0] Error uploading image:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -326,6 +377,72 @@ function BlogsContent() {
                 </p>
               </div>
 
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Blog Picture</p>
+                    <p className="text-xs text-slate-500">Upload an image to the Supabase bucket.</p>
+                  </div>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          void handleImageUpload(file);
+                        }
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                    <span className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50">
+                      <Upload className="w-4 h-4" />
+                      {uploadingImage ? 'Uploading...' : 'Upload Picture'}
+                    </span>
+                  </label>
+                </div>
+
+                {(imagePreview || coverImageUrl) ? (
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                    <div className="relative aspect-[16/9] bg-slate-100">
+                      <img
+                        src={imagePreview || coverImageUrl}
+                        alt="Blog cover preview"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs text-slate-600">
+                      <span className="flex items-center gap-2 truncate">
+                        <FileImage className="w-4 h-4" />
+                        {imageFileName || 'Uploaded image'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setImageFileName(null);
+                          setCoverImageUrl('');
+                        }}
+                        className="font-semibold text-blue-600 hover:text-blue-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
+                    <p className="text-sm font-medium text-slate-700">No image uploaded yet</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Upload a picture and it will be saved in the Supabase bucket.
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-slate-500 break-all">
+                  {coverImageUrl ? coverImageUrl : 'No image URL yet'}
+                </p>
+              </div>
+
               <label className="flex items-center gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/70">
                 <input
                   type="checkbox"
@@ -344,13 +461,17 @@ function BlogsContent() {
               <div className="flex flex-wrap gap-3 pt-2">
                 <Button
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || uploadingImage}
                   className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md"
                 >
                   {saving ? 'Saving...' : selectedPost ? 'Save Changes' : 'Create Post'}
                 </Button>
                 {selectedPost && (
-                  <Button variant="destructive" onClick={() => handleDelete(selectedPost)} disabled={saving}>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleDelete(selectedPost)}
+                    disabled={saving || uploadingImage}
+                  >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete Post
                   </Button>

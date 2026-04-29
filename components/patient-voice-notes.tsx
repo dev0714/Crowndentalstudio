@@ -16,6 +16,8 @@ type VoiceNote = {
   audio_url?: string;
   audio_path?: string;
   transcript?: string;
+  transcription_status?: 'completed' | 'failed';
+  transcription_error?: string | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -98,8 +100,14 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
         throw new Error(payload.error || 'Failed to save voice note');
       }
 
+      const transcriptionStatus = payload.data?.transcriptionStatus as 'completed' | 'failed' | undefined;
+      const transcriptionError = payload.data?.transcriptionError as string | undefined;
       setSelectedFile(null);
-      setStatus('Voice note saved and transcribed.');
+      setStatus(
+        transcriptionStatus === 'failed'
+          ? `Voice note saved, but transcription needs attention${transcriptionError ? `: ${transcriptionError}` : '.'}`
+          : 'Voice note saved and transcribed.',
+      );
       await fetchVoiceNotes();
     } catch (err) {
       console.error('[v0] Voice note upload failed', err);
@@ -282,6 +290,8 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
             voiceNotes.map((note) => {
               const audioUrl = note.audio_url || String(note.metadata?.audio_url || '');
               const transcript = note.transcript || note.content;
+              const transcriptionStatus = note.transcription_status || String(note.metadata?.transcription_status || '');
+              const transcriptionError = note.transcription_error || String(note.metadata?.transcription_error || '');
 
               return (
                 <div key={note.id} className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
@@ -294,6 +304,11 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
                         {note.status}
                       </span>
+                      {transcriptionStatus === 'failed' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          Transcript pending
+                        </span>
+                      )}
                       <Button type="button" variant="outline" size="sm" onClick={() => deleteVoiceNote(note.id)} className="text-red-600 border-red-200 hover:bg-red-50">
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -324,6 +339,11 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
                   <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700 whitespace-pre-wrap">
                     {transcript || 'No transcript available yet.'}
                   </div>
+                  {transcriptionError && (
+                    <p className="text-xs text-amber-700">
+                      Transcription note: {transcriptionError}
+                    </p>
+                  )}
                 </div>
               );
             })

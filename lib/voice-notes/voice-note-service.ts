@@ -53,6 +53,9 @@ export async function createVoiceNoteRecord(
   const transcribeAudio = deps.transcribeAudio || (await import('./transcribe.ts')).transcribeVoiceNoteAudio;
 
   let uploaded: VoiceNoteUploadResult | null = null;
+  let transcript = '';
+  let transcriptionStatus: 'completed' | 'failed' = 'completed';
+  let transcriptionError: string | null = null;
 
   try {
     uploaded = await deps.uploadAudio({
@@ -61,7 +64,12 @@ export async function createVoiceNoteRecord(
       filename: input.filename,
       mimeType,
     });
-    const transcript = await transcribeAudio({ file: input.file, filename: input.filename });
+    try {
+      transcript = await transcribeAudio({ file: input.file, filename: input.filename });
+    } catch (error) {
+      transcriptionStatus = 'failed';
+      transcriptionError = error instanceof Error ? error.message : 'Failed to transcribe voice note';
+    }
 
     const document = await deps.insertDocument({
       patient_id: input.patientId,
@@ -80,6 +88,8 @@ export async function createVoiceNoteRecord(
         audio_path: uploaded.audioPath,
         audio_url: uploaded.audioUrl,
         transcript,
+        transcription_status: transcriptionStatus,
+        transcription_error: transcriptionError,
         transcription_model: process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1',
         source_file_name: input.filename,
         mime_type: mimeType,
@@ -90,6 +100,8 @@ export async function createVoiceNoteRecord(
       ...document,
       title,
       transcript,
+      transcriptionStatus,
+      transcriptionError,
       audioPath: uploaded.audioPath,
       audioUrl: uploaded.audioUrl,
     };

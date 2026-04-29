@@ -46,3 +46,36 @@ test('createVoiceNoteRecord stores audio, transcript, and patient document metad
   assert.equal(result.audioUrl, `https://cdn.example.com/${uploadCalls[0].path}`);
   assert.equal(result.transcript, 'Patient reports mild tooth pain.');
 });
+
+test('createVoiceNoteRecord keeps the voice note even if transcription fails', async () => {
+  const file = new File(['hello world'], 'recording.webm', { type: 'audio/webm' });
+  const insertCalls: Array<Record<string, unknown>> = [];
+
+  const result = await createVoiceNoteRecord(
+    {
+      patientId: 'patient-123',
+      patientName: 'John Smith',
+      file,
+      filename: 'recording.webm',
+      now: new Date('2026-04-29T10:15:00.000Z'),
+      uploadId: 'upload-abc',
+    },
+    {
+      uploadAudio: async ({ path }) => ({ audioPath: path, audioUrl: `https://cdn.example.com/${path}` }),
+      transcribeAudio: async () => {
+        throw new Error('OpenAI unavailable');
+      },
+      insertDocument: async (payload) => {
+        insertCalls.push(payload);
+        return { ...payload, id: 'doc-2', created_at: '2026-04-29T10:15:00.000Z' };
+      },
+    },
+  );
+
+  assert.equal(insertCalls.length, 1);
+  assert.equal(insertCalls[0].content, '');
+  assert.equal(insertCalls[0].metadata.transcription_status, 'failed');
+  assert.equal(insertCalls[0].metadata.transcription_error, 'OpenAI unavailable');
+  assert.equal(result.transcript, '');
+  assert.equal(result.transcriptionStatus, 'failed');
+});

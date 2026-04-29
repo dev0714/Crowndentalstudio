@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PatientVoiceNotes } from '@/components/patient-voice-notes';
 import { formatPhoneSA, formatDateSA } from '@/lib/sa-formatting';
 import { ArrowLeft, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { CLAIM_STATUS, LAB_CASE_STATUS, MEDICAL_AID_AUTHORIZATION_STATUS } from '@/lib/workflows/status-definitions';
@@ -13,7 +14,7 @@ import { PATIENT_CONSENT_TYPES, PATIENT_MESSAGE_TYPES } from '@/lib/patients/pat
 import { PatientAuditTimeline } from '@/components/patient-audit-timeline';
 import { needsManagerFollowUp, shouldPromptForReview } from '@/lib/reviews/review-safety';
 
-type TabType = 'dashboard' | 'personal' | 'medical-history' | 'medical-aid' | 'authorizations' | 'communication' | 'clinical' | 'treatment' | 'quotes' | 'consents' | 'documents' | 'payments' | 'claims' | 'lab' | 'messages' | 'feedback';
+type TabType = 'dashboard' | 'personal' | 'medical-history' | 'medical-aid' | 'authorizations' | 'communication' | 'clinical' | 'treatment' | 'quotes' | 'consents' | 'documents' | 'voice-notes' | 'payments' | 'claims' | 'lab' | 'messages' | 'feedback';
 
 interface PatientDetail {
   id: string;
@@ -892,6 +893,7 @@ function PatientDetailContent() {
     { id: 'medical-aid', label: 'Medical Aid' },
     { id: 'authorizations', label: 'Authorizations' },
     { id: 'documents', label: 'Documents' },
+    { id: 'voice-notes', label: 'Voice Notes' },
     { id: 'communication', label: 'Communication' },
     { id: 'clinical', label: 'Clinical Timeline' },
     { id: 'treatment', label: 'Treatment Plans' },
@@ -1586,6 +1588,11 @@ function PatientDetailContent() {
                 )) : <div className="flex items-center justify-center h-40 text-slate-400 text-sm rounded-2xl border-2 border-dashed border-slate-200">No documents generated yet</div>}
             </div>
             </div>
+          )}
+
+          {/* Voice Notes Tab */}
+          {activeTab === 'voice-notes' && (
+            <PatientVoiceNotes patientId={patientId} patientName={`${patient?.first_name || ''} ${patient?.last_name || ''}`.trim()} />
           )}
 
           {/* Feedback Tab */}

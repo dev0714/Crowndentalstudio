@@ -10,6 +10,10 @@ function isMissingRelationError(error: { code?: string; message?: string }) {
   return error.code === '42P01' || error.code === 'PGRST205' || Boolean(error.message?.includes('does not exist'));
 }
 
+function isVoiceNoteRecord(record: { document_type?: string; metadata?: Record<string, unknown> | null }) {
+  return record.document_type === 'voice_note' || record.metadata?.document_kind === 'voice_note';
+}
+
 async function getPatientName(patientId: string) {
   const { data } = await supabaseServer
     .from('patients')
@@ -25,32 +29,33 @@ async function listVoiceNotes(patientId: string) {
     .from('patient_documents')
     .select('*')
     .eq('patient_id', patientId)
-    .eq('document_type', 'voice_note')
     .order('created_at', { ascending: false });
 
   if (error && !isMissingRelationError(error)) {
     throw error;
   }
 
-  return (data || []).map((row) => ({
-    id: row.id,
-    patient_id: row.patient_id,
-    document_type: row.document_type || 'voice_note',
-    title: row.title || '',
-    content: row.content || '',
-    status: row.status || 'recorded',
-    related_entity_type: row.related_entity_type || 'voice_note',
-    related_entity_id: row.related_entity_id || '',
-    signed_by_patient: Boolean(row.signed_by_patient),
-    signed_by_guardian: Boolean(row.signed_by_guardian),
-    signature_name: row.signature_name || '',
-    signed_at: row.signed_at || '',
-    metadata: row.metadata || {},
-    created_at: row.created_at || '',
-    audio_url: row.metadata?.audio_url || '',
-    audio_path: row.metadata?.audio_path || '',
-    transcript: row.metadata?.transcript || row.content || '',
-  }));
+  return (data || [])
+    .filter((row) => isVoiceNoteRecord(row))
+    .map((row) => ({
+      id: row.id,
+      patient_id: row.patient_id,
+      document_type: 'voice_note',
+      title: row.title || '',
+      content: row.content || '',
+      status: row.status || 'draft',
+      related_entity_type: row.related_entity_type || 'voice_note',
+      related_entity_id: row.related_entity_id || '',
+      signed_by_patient: Boolean(row.signed_by_patient),
+      signed_by_guardian: Boolean(row.signed_by_guardian),
+      signature_name: row.signature_name || '',
+      signed_at: row.signed_at || '',
+      metadata: row.metadata || {},
+      created_at: row.created_at || '',
+      audio_url: row.metadata?.audio_url || '',
+      audio_path: row.metadata?.audio_path || '',
+      transcript: row.metadata?.transcript || row.content || '',
+    }));
 }
 
 async function deleteVoiceNote(id: string) {
@@ -58,7 +63,6 @@ async function deleteVoiceNote(id: string) {
     .from('patient_documents')
     .select('*')
     .eq('id', id)
-    .eq('document_type', 'voice_note')
     .maybeSingle();
 
   if (error && !isMissingRelationError(error)) {
@@ -68,7 +72,7 @@ async function deleteVoiceNote(id: string) {
   const audioPath = data?.metadata?.audio_path as string | undefined;
   const bucketName = (data?.metadata?.audio_bucket as string | undefined) || process.env.SUPABASE_VOICE_NOTES_BUCKET || 'voice-notes';
 
-  const { error: deleteError } = await supabaseServer.from('patient_documents').delete().eq('id', id).eq('document_type', 'voice_note');
+  const { error: deleteError } = await supabaseServer.from('patient_documents').delete().eq('id', id);
   if (deleteError && !isMissingRelationError(deleteError)) {
     throw deleteError;
   }
@@ -160,20 +164,38 @@ export async function POST(request: NextRequest) {
         },
         transcribeAudio: transcribeVoiceNoteAudio,
         insertDocument: async (payload) => {
-          const { data, error } = await supabaseServer.from('patient_documents').insert([{
+          const voiceNotePayload = {
             ...payload,
+            status: 'draft',
             metadata: {
               ...(payload.metadata || {}),
               audio_bucket: bucketName,
+              document_kind: 'voice_note',
             },
             created_by: user.id,
-          }]).select();
+          };
 
-          if (error) {
-            throw error;
+          const primaryResult = await supabaseServer.from('patient_documents').insert([voiceNotePayload]).select();
+
+          if (!primaryResult.error) {
+            return primaryResult.data?.[0] || voiceNotePayload;
           }
 
-          return data?.[0] || payload;
+          const fallbackResult = await supabaseServer.from('patient_documents').insert([
+            {
+              ...voiceNotePayload,
+              document_type: 'consent_form',
+            },
+          ]).select();
+
+          if (fallbackResult.error) {
+            throw fallbackResult.error;
+          }
+
+          return fallbackResult.data?.[0] || {
+            ...voiceNotePayload,
+            document_type: 'consent_form',
+          };
         },
       },
     );

@@ -36,6 +36,7 @@ test('createVoiceNoteRecord stores audio, transcript, and patient document metad
 
   assert.equal(insertCalls.length, 1);
   assert.equal(insertCalls[0].document_type, 'voice_note');
+  assert.equal(insertCalls[0].status, 'draft');
   assert.equal(insertCalls[0].patient_id, 'patient-123');
   assert.equal(insertCalls[0].title, 'Voice note - John Smith - 29 Apr 2026');
   assert.equal(insertCalls[0].content, 'Patient reports mild tooth pain.');

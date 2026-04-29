@@ -76,7 +76,7 @@ export async function createVoiceNoteRecord(
       document_type: 'voice_note',
       title,
       content: transcript,
-      status: 'recorded',
+      status: 'draft',
       related_entity_type: 'voice_note',
       related_entity_id: uploaded.audioPath,
       signed_by_patient: false,

@@ -66,6 +66,10 @@ function getResourceConfig(resource: string) {
   return RESOURCE_CONFIG[resource] || null;
 }
 
+function isVoiceNoteDocument(record: Record<string, unknown>) {
+  return record.document_type === 'voice_note' || (record.metadata as Record<string, unknown> | undefined)?.document_kind === 'voice_note';
+}
+
 function splitLines(value: string | null | undefined) {
   return (value || '')
     .split(/\r?\n/)
@@ -176,7 +180,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ res
       }
 
       const syntheticDocuments = [
-        ...(documentsResult.data || []).map((row) => mapDocumentForResponse(row)),
+        ...(documentsResult.data || [])
+          .filter((row) => !isVoiceNoteDocument(row))
+          .map((row) => mapDocumentForResponse(row)),
         ...(treatmentPlansResult.data || []).map((row) => ({
           id: row.id,
           patient_id: row.patient_id,

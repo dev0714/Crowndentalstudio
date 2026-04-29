@@ -287,47 +287,62 @@ function BlogsContent() {
                   {filteredPosts.map((post) => {
                     const isActive = post.id === selectedPostId;
                     return (
-                      <button
+                      <div
                         key={post.id}
-                        onClick={() => handleSelectPost(post)}
-                        className={`w-full text-left p-3 rounded-2xl border transition-all ${
+                        className={`rounded-2xl border transition-all ${
                           isActive
                             ? 'border-cyan-400 bg-cyan-50 shadow-sm'
                             : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-900 truncate">{post.title}</p>
-                            <p className="text-xs text-slate-500 truncate mt-1">
-                              {post.excerpt || 'No summary yet'}
-                            </p>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectPost(post)}
+                          className="w-full text-left p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-900 truncate">{post.title}</p>
+                              <p className="text-xs text-slate-500 truncate mt-1">
+                                {post.excerpt || 'No summary yet'}
+                              </p>
+                            </div>
+                            <span
+                              className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
+                                post.is_published
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}
+                            >
+                              {post.is_published ? 'Published' : 'Draft'}
+                            </span>
                           </div>
-                          <span
-                            className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
-                              post.is_published
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-amber-100 text-amber-700'
-                            }`}
-                          >
-                            {post.is_published ? 'Published' : 'Draft'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                          <span>{post.is_published ? 'Visible on website' : 'Hidden from website'}</span>
-                          <span>
-                            {new Date(post.published_at || post.updated_at).toLocaleDateString('en-ZA')}
-                          </span>
-                        </div>
-                        <div className="mt-3 flex items-center gap-2">
+                          <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
+                            <span>{post.is_published ? 'Visible on website' : 'Hidden from website'}</span>
+                            <span>
+                              {new Date(post.published_at || post.updated_at).toLocaleDateString('en-ZA')}
+                            </span>
+                          </div>
+                        </button>
+
+                        <div className="flex items-center gap-2 px-3 pb-3">
                           <Button variant="outline" size="sm" asChild className="h-8 rounded-xl">
                             <Link href={`/blog/${post.slug}`} target="_blank" rel="noreferrer">
                               <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                               View
                             </Link>
                           </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 rounded-xl"
+                            onClick={() => handleDelete(post)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                            Delete
+                          </Button>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

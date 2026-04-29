@@ -27,6 +27,7 @@ type PatientVoiceNotesProps = {
 export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesProps) {
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const fetchVoiceNotes = async () => {
     const response = await fetch(`/api/crm/patients/voice-notes?patientId=${patientId}`, {
@@ -60,6 +62,20 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
       streamRef.current = null;
     };
   }, [patientId]);
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(selectedFile);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedFile]);
 
   const uploadFile = async (file: File) => {
     setIsUploading(true);
@@ -150,6 +166,25 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
   const clearSelectedFile = () => {
     setSelectedFile(null);
     setStatus(null);
+    setPreviewUrl(null);
+  };
+
+  const playPreview = async () => {
+    if (!previewAudioRef.current || !previewUrl) {
+      return;
+    }
+
+    try {
+      previewAudioRef.current.currentTime = 0;
+      await previewAudioRef.current.play();
+    } catch (playError) {
+      console.error('[v0] Failed to play voice note preview', playError);
+      setError('Could not play the selected recording');
+    }
+  };
+
+  const pausePreview = () => {
+    previewAudioRef.current?.pause();
   };
 
   const deleteVoiceNote = async (id: string) => {
@@ -217,6 +252,22 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
             </div>
           )}
 
+          {previewUrl && (
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+              <audio ref={previewAudioRef} controls src={previewUrl} className="w-full" />
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={playPreview}>
+                  <Play className="w-3.5 h-3.5 mr-2" />
+                  Play
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={pausePreview}>
+                  <Pause className="w-3.5 h-3.5 mr-2" />
+                  Pause
+                </Button>
+              </div>
+            </div>
+          )}
+
           {status && <p className="text-sm text-emerald-700">{status}</p>}
           {error && <p className="text-sm text-red-600">{error}</p>}
         </CardContent>
@@ -250,9 +301,19 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
                   </div>
 
                   {audioUrl ? (
-                    <audio controls className="w-full">
-                      <source src={audioUrl} />
-                    </audio>
+                    <div className="space-y-2">
+                      <audio controls className="w-full">
+                        <source src={audioUrl} />
+                      </audio>
+                      <a
+                        href={audioUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex text-sm font-medium text-blue-700 hover:text-blue-800"
+                      >
+                        Open audio file
+                      </a>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <FileAudio className="w-4 h-4" />

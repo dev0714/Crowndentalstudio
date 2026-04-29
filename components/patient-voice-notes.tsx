@@ -100,8 +100,8 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
         throw new Error(payload.error || 'Failed to save voice note');
       }
 
-      const transcriptionStatus = payload.data?.transcriptionStatus as 'completed' | 'failed' | undefined;
-      const transcriptionError = payload.data?.transcriptionError as string | undefined;
+      const transcriptionStatus = payload.data?.transcription_status as 'completed' | 'failed' | undefined;
+      const transcriptionError = payload.data?.transcription_error as string | undefined;
       setSelectedFile(null);
       setStatus(
         transcriptionStatus === 'failed'
@@ -198,7 +198,7 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
   const deleteVoiceNote = async (id: string) => {
     try {
       setError(null);
-      const response = await fetch(`/api/crm/patients/voice-notes?id=${id}`, {
+      const response = await fetch(`/api/crm/patients/voice-notes?patientId=${patientId}&id=${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

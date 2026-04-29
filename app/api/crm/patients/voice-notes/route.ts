@@ -2,94 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { supabaseServer } from '@/lib/supabase/server';
-import { isSupportedVoiceNoteMimeType } from '@/lib/voice-notes/voice-note-storage';
-import { createVoiceNoteRecord } from '@/lib/voice-notes/voice-note-service';
+import { isSupportedVoiceNoteMimeType, buildVoiceNoteTitle } from '@/lib/voice-notes/voice-note-storage';
+import { addVoiceNote, deleteVoiceNote as deleteStoredVoiceNote, listVoiceNotes, type VoiceNoteRecord } from '@/lib/voice-notes/voice-note-store';
 import { transcribeVoiceNoteAudio } from '@/lib/voice-notes/transcribe';
 
-function isMissingRelationError(error: { code?: string; message?: string }) {
-  return error.code === '42P01' || error.code === 'PGRST205' || Boolean(error.message?.includes('does not exist'));
+function getPatientDisplayName(formData: FormData) {
+  const patientName = String(formData.get('patient_name') || '').trim();
+  return patientName || 'Patient';
 }
 
-function isVoiceNoteRecord(record: { document_type?: string; metadata?: Record<string, unknown> | null }) {
-  return record.document_type === 'voice_note' || record.metadata?.document_kind === 'voice_note';
-}
+async function uploadVoiceNoteAudio(bucketName: string, path: string, file: File, mimeType: string) {
+  const { error: uploadError } = await supabaseServer.storage
+    .from(bucketName)
+    .upload(path, file, {
+      contentType: mimeType,
+      upsert: false,
+    });
 
-async function getPatientName(patientId: string) {
-  const { data, error } = await supabaseServer
-    .from('patients')
-    .select('first_name, last_name')
-    .eq('id', patientId)
-    .maybeSingle();
-
-  if (error && isMissingRelationError(error)) {
-    return '';
+  if (uploadError) {
+    throw uploadError;
   }
 
-  if (error) {
-    throw error;
-  }
-
-  return `${data?.first_name || ''} ${data?.last_name || ''}`.trim();
-}
-
-async function listVoiceNotes(patientId: string) {
-  const { data, error } = await supabaseServer
-    .from('patient_documents')
-    .select('*')
-    .eq('patient_id', patientId)
-    .order('created_at', { ascending: false });
-
-  if (error && !isMissingRelationError(error)) {
-    throw error;
-  }
-
-  return (data || [])
-    .filter((row) => isVoiceNoteRecord(row))
-    .map((row) => ({
-      id: row.id,
-      patient_id: row.patient_id,
-      document_type: 'voice_note',
-      title: row.title || '',
-      content: row.content || '',
-      status: row.status || 'draft',
-      related_entity_type: row.related_entity_type || 'voice_note',
-      related_entity_id: row.related_entity_id || '',
-      signed_by_patient: Boolean(row.signed_by_patient),
-      signed_by_guardian: Boolean(row.signed_by_guardian),
-      signature_name: row.signature_name || '',
-      signed_at: row.signed_at || '',
-      metadata: row.metadata || {},
-      created_at: row.created_at || '',
-      audio_url: row.metadata?.audio_url || '',
-      audio_path: row.metadata?.audio_path || '',
-      transcript: row.metadata?.transcript || row.content || '',
-    }));
-}
-
-async function deleteVoiceNote(id: string) {
-  const { data, error } = await supabaseServer
-    .from('patient_documents')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (error && !isMissingRelationError(error)) {
-    throw error;
-  }
-
-  const audioPath = data?.metadata?.audio_path as string | undefined;
-  const bucketName = (data?.metadata?.audio_bucket as string | undefined) || process.env.SUPABASE_VOICE_NOTES_BUCKET || 'voice-notes';
-
-  const { error: deleteError } = await supabaseServer.from('patient_documents').delete().eq('id', id);
-  if (deleteError && !isMissingRelationError(deleteError)) {
-    throw deleteError;
-  }
-
-  if (audioPath) {
-    await supabaseServer.storage.from(bucketName).remove([audioPath]);
-  }
-
-  return { id };
+  const { data } = supabaseServer.storage.from(bucketName).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export async function GET(request: NextRequest) {
@@ -114,6 +49,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  let uploadedAudioPath: string | null = null;
+
   try {
     const user = await getAuthenticatedUser();
     if (!user) {
@@ -136,80 +73,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unsupported audio file type' }, { status: 400 });
     }
 
-    const patientName = String(formData.get('patient_name') || (await getPatientName(patientId)) || 'Patient').trim() || 'Patient';
     const bucketName = process.env.SUPABASE_VOICE_NOTES_BUCKET || 'voice-notes';
+    const patientName = getPatientDisplayName(formData);
     const uploadId = randomUUID();
+    const path = `patients/${patientId}/${new Date().toISOString().slice(0, 10)}/${uploadId}-${audioValue.name || 'voice-note.webm'}`;
+    const mimeType = audioValue.type.split(';')[0].trim();
+    const audioUrl = await uploadVoiceNoteAudio(bucketName, path, audioValue, mimeType);
+    uploadedAudioPath = path;
 
-    const note = await createVoiceNoteRecord(
-      {
-        patientId,
-        patientName,
-        file: audioValue,
-        filename: audioValue.name || 'voice-note.webm',
-        uploadId,
+    let transcript = '';
+    let transcriptionStatus: 'completed' | 'failed' = 'completed';
+    let transcriptionError: string | null = null;
+
+    try {
+      transcript = await transcribeVoiceNoteAudio({ file: audioValue, filename: audioValue.name || 'voice-note.webm' });
+    } catch (error) {
+      transcriptionStatus = 'failed';
+      transcriptionError = error instanceof Error ? error.message : 'Failed to transcribe voice note';
+    }
+
+    const note: VoiceNoteRecord = {
+      id: randomUUID(),
+      patient_id: patientId,
+      title: buildVoiceNoteTitle(patientName),
+      content: transcript,
+      status: 'draft',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      audio_url: audioUrl,
+      audio_path: path,
+      transcript,
+      transcription_status: transcriptionStatus,
+      transcription_error: transcriptionError,
+      metadata: {
+        audio_bucket: bucketName,
+        audio_path: path,
+        audio_url: audioUrl,
+        transcript,
+        transcription_status: transcriptionStatus,
+        transcription_error: transcriptionError,
+        transcription_model: process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1',
+        source_file_name: audioValue.name || 'voice-note.webm',
+        mime_type: mimeType,
+        document_kind: 'voice_note',
+        recorded_by: user.id,
+        recorded_by_email: user.email,
+        recorded_by_name: user.full_name,
       },
-      {
-        uploadAudio: async ({ path, file, mimeType }) => {
-          const { error: uploadError } = await supabaseServer.storage
-            .from(bucketName)
-            .upload(path, file, {
-              contentType: (mimeType || file.type || 'application/octet-stream').split(';')[0].trim(),
-              upsert: false,
-            });
+    };
 
-          if (uploadError) {
-            throw uploadError;
-          }
-
-          const { data } = supabaseServer.storage.from(bucketName).getPublicUrl(path);
-          return {
-            audioPath: path,
-            audioUrl: data.publicUrl,
-          };
-        },
-        deleteAudio: async (audioPath) => {
-          await supabaseServer.storage.from(bucketName).remove([audioPath]);
-        },
-        transcribeAudio: transcribeVoiceNoteAudio,
-        insertDocument: async (payload) => {
-          const voiceNotePayload = {
-            ...payload,
-            status: 'draft',
-            metadata: {
-              ...(payload.metadata || {}),
-              audio_bucket: bucketName,
-              document_kind: 'voice_note',
-            },
-            created_by: user.id,
-          };
-
-          const primaryResult = await supabaseServer.from('patient_documents').insert([voiceNotePayload]).select();
-
-          if (!primaryResult.error) {
-            return primaryResult.data?.[0] || voiceNotePayload;
-          }
-
-          const fallbackResult = await supabaseServer.from('patient_documents').insert([
-            {
-              ...voiceNotePayload,
-              document_type: 'consent_form',
-            },
-          ]).select();
-
-          if (fallbackResult.error) {
-            throw fallbackResult.error;
-          }
-
-          return fallbackResult.data?.[0] || {
-            ...voiceNotePayload,
-            document_type: 'consent_form',
-          };
-        },
-      },
-    );
-
-    return NextResponse.json({ data: note }, { status: 201 });
+    const saved = await addVoiceNote(patientId, note, null);
+    return NextResponse.json({ data: saved }, { status: 201 });
   } catch (error) {
+    if (uploadedAudioPath) {
+      const bucketName = process.env.SUPABASE_VOICE_NOTES_BUCKET || 'voice-notes';
+      await supabaseServer.storage.from(bucketName).remove([uploadedAudioPath]).catch(() => undefined);
+    }
+
     console.error('[voice-notes][POST]', error);
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to create voice note' }, { status: 500 });
   }
@@ -224,12 +144,27 @@ export async function DELETE(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    if (!id) {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    const patientId = searchParams.get('patientId');
+
+    if (!id || !patientId) {
+      return NextResponse.json({ error: 'id and patientId are required' }, { status: 400 });
     }
 
-    const data = await deleteVoiceNote(id);
-    return NextResponse.json({ data });
+    const currentNotes = await listVoiceNotes(patientId);
+    const note = currentNotes.find((entry) => entry.id === id);
+    if (!note) {
+      return NextResponse.json({ error: 'Voice note not found' }, { status: 404 });
+    }
+
+    await deleteStoredVoiceNote(patientId, id, null);
+
+    const audioPath = note.audio_path || String(note.metadata?.audio_path || '');
+    const bucketName = String(note.metadata?.audio_bucket || process.env.SUPABASE_VOICE_NOTES_BUCKET || 'voice-notes');
+    if (audioPath) {
+      await supabaseServer.storage.from(bucketName).remove([audioPath]).catch(() => undefined);
+    }
+
+    return NextResponse.json({ data: { id } });
   } catch (error) {
     console.error('[voice-notes][DELETE]', error);
     return NextResponse.json({ error: 'Failed to delete voice note' }, { status: 500 });

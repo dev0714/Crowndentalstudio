@@ -179,9 +179,12 @@ function DashboardContent() {
           </div>
 
           {/* Quick links */}
-          <div className="bg-gradient-to-br from-blue-700 to-cyan-600 rounded-2xl p-5 text-white shadow-lg">
-            <p className="font-bold text-sm mb-1">Quick Actions</p>
-            <p className="text-white/70 text-xs mb-4">Jump to common tasks</p>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-cyan-500">
+              <p className="font-bold text-sm text-white">Quick Actions</p>
+              <p className="text-white/75 text-xs mt-1">Jump to common tasks</p>
+            </div>
+            <div className="p-5">
             <div className="space-y-2">
               {[
                 { label: 'Add New Patient', href: '/patients/add' },
@@ -191,12 +194,13 @@ function DashboardContent() {
                 <a
                   key={href}
                   href={href}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-sm font-medium"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-800 border border-slate-200 hover:border-blue-200"
                 >
                   {label}
-                  <ArrowUpRight className="w-3.5 h-3.5 opacity-70" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-blue-600" />
                 </a>
               ))}
+            </div>
             </div>
           </div>
         </div>

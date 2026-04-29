@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
           const { error: uploadError } = await supabaseServer.storage
             .from(bucketName)
             .upload(path, file, {
-              contentType: mimeType || file.type || 'application/octet-stream',
+              contentType: (mimeType || file.type || 'application/octet-stream').split(';')[0].trim(),
               upsert: false,
             });
 

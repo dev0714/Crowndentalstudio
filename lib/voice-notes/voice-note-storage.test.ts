@@ -26,5 +26,7 @@ test('buildVoiceNoteTitle creates a readable title', () => {
 
 test('isSupportedVoiceNoteMimeType allows audio uploads only', () => {
   assert.equal(isSupportedVoiceNoteMimeType('audio/webm'), true);
+  assert.equal(isSupportedVoiceNoteMimeType('audio/webm;codecs=opus'), true);
+  assert.equal(isSupportedVoiceNoteMimeType('video/webm;codecs=opus'), true);
   assert.equal(isSupportedVoiceNoteMimeType('image/png'), false);
 });

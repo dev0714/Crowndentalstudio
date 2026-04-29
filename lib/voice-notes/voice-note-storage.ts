@@ -9,6 +9,10 @@ const SUPPORTED_AUDIO_MIME_TYPES = new Set([
   'audio/aac',
 ]);
 
+function stripMimeParameters(mimeType: string) {
+  return mimeType.toLowerCase().split(';')[0].trim();
+}
+
 function slugifySegment(value: string) {
   return value
     .toLowerCase()
@@ -40,7 +44,8 @@ function inferExtension(fileName: string, mimeType: string) {
 }
 
 export function isSupportedVoiceNoteMimeType(mimeType: string) {
-  return SUPPORTED_AUDIO_MIME_TYPES.has(mimeType.toLowerCase());
+  const normalizedMimeType = stripMimeParameters(mimeType);
+  return SUPPORTED_AUDIO_MIME_TYPES.has(normalizedMimeType) || normalizedMimeType === 'video/webm' || normalizedMimeType === 'video/ogg';
 }
 
 export function buildVoiceNoteStoragePath(
@@ -53,7 +58,7 @@ export function buildVoiceNoteStoragePath(
 ) {
   const dateSegment = now.toISOString().slice(0, 10);
   const patientSegment = slugifySegment(patientName) || slugifySegment(patientId) || 'patient';
-  const extension = inferExtension(fileName, mimeType);
+  const extension = inferExtension(fileName, stripMimeParameters(mimeType));
   const fileSegment = slugifySegment(fileName.replace(/\.[^.]+$/, '')) || 'voice-note';
 
   return `patients/${patientSegment}/${dateSegment}/${uploadId}-${fileSegment}.${extension}`;

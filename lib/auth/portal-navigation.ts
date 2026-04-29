@@ -13,6 +13,7 @@ export const PORTAL_NAV_ITEMS = [
   { label: 'HR', href: '/hr' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Blog', href: '/blogs' },
+  { label: 'Settings', href: '/settings' },
   { label: 'Roles', href: '/roles' },
 ] as const;
 

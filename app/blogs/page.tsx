@@ -6,38 +6,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, PencilLine, Plus, RefreshCcw, Trash2 } from 'lucide-react';
-import { slugifyBlogTitle } from '@/lib/blog/slug';
+import { FileText, Plus, RefreshCcw, Trash2 } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog/types';
 
 type BlogFormState = {
   title: string;
-  slug: string;
-  category: string;
   excerpt: string;
   content: string;
-  cover_image: string;
   is_published: boolean;
 };
 
 const EMPTY_FORM: BlogFormState = {
   title: '',
-  slug: '',
-  category: 'General',
   excerpt: '',
   content: '',
-  cover_image: '/blog-default.jpg',
   is_published: true,
 };
 
 function toFormState(post: BlogPost): BlogFormState {
   return {
     title: post.title,
-    slug: post.slug,
-    category: post.category,
     excerpt: post.excerpt,
     content: post.content,
-    cover_image: post.cover_image,
     is_published: post.is_published,
   };
 }
@@ -104,21 +94,9 @@ function BlogsContent() {
   };
 
   const handleFieldChange = (field: keyof BlogFormState, value: string | boolean) => {
-    setForm((current) => {
-      const next = { ...current, [field]: value };
-
-      if (field === 'title' && !current.slug.trim()) {
-        next.slug = slugifyBlogTitle(String(value));
-      }
-
-      return next;
-    });
-  };
-
-  const handleGenerateSlug = () => {
     setForm((current) => ({
       ...current,
-      slug: slugifyBlogTitle(current.title),
+      [field]: value,
     }));
   };
 
@@ -202,7 +180,7 @@ function BlogsContent() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Blog Manager</h1>
             <p className="text-slate-500 text-sm mt-0.5">
-              Add, edit, publish, and remove website blog posts from the CRM.
+              Write and publish blog posts without needing technical settings.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -231,7 +209,7 @@ function BlogsContent() {
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
               <CardTitle className="text-base">Posts</CardTitle>
               <CardDescription className="text-xs">
-                Published and draft articles currently powering the website blog.
+                Pick a post to edit, or create a new one.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
@@ -263,7 +241,9 @@ function BlogsContent() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="font-semibold text-slate-900 truncate">{post.title}</p>
-                            <p className="text-xs text-slate-500 truncate mt-1">/{post.slug}</p>
+                            <p className="text-xs text-slate-500 truncate mt-1">
+                              {post.excerpt || 'No summary yet'}
+                            </p>
                           </div>
                           <span
                             className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
@@ -276,7 +256,7 @@ function BlogsContent() {
                           </span>
                         </div>
                         <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                          <span>{post.category}</span>
+                          <span>{post.is_published ? 'Visible on website' : 'Hidden from website'}</span>
                           <span>
                             {new Date(post.published_at || post.updated_at).toLocaleDateString('en-ZA')}
                           </span>
@@ -300,92 +280,49 @@ function BlogsContent() {
                     {selectedPost ? 'Edit Blog Post' : 'Create Blog Post'}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Website updates pull from this content automatically.
+                    The website updates automatically. The link slug is created from the title for you.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Title
-                  </label>
-                  <Input
-                    value={form.title}
-                    onChange={(e) => handleFieldChange('title', e.target.value)}
-                    placeholder="Article title"
-                    className="rounded-xl border-slate-200"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Category
-                  </label>
-                  <Input
-                    value={form.category}
-                    onChange={(e) => handleFieldChange('category', e.target.value)}
-                    placeholder="General"
-                    className="rounded-xl border-slate-200"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-4 items-end">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Slug
-                  </label>
-                  <Input
-                    value={form.slug}
-                    onChange={(e) => handleFieldChange('slug', e.target.value)}
-                    placeholder="teeth-whitening-tips"
-                    className="rounded-xl border-slate-200"
-                  />
-                </div>
-                <Button variant="outline" onClick={handleGenerateSlug}>
-                  <PencilLine className="w-4 h-4 mr-2" />
-                  Generate Slug
-                </Button>
-              </div>
-
               <div className="space-y-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Excerpt
-                </label>
-                <Textarea
-                  value={form.excerpt}
-                  onChange={(e) => handleFieldChange('excerpt', e.target.value)}
-                  placeholder="Short summary shown on the blog listing page"
-                  className="min-h-24 rounded-xl border-slate-200"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Cover Image Path
+                  Title
                 </label>
                 <Input
-                  value={form.cover_image}
-                  onChange={(e) => handleFieldChange('cover_image', e.target.value)}
-                  placeholder="/blog-default.jpg"
+                  value={form.title}
+                  onChange={(e) => handleFieldChange('title', e.target.value)}
+                  placeholder="Article title"
                   className="rounded-xl border-slate-200"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Content
+                  Short Summary
+                </label>
+                <Textarea
+                  value={form.excerpt}
+                  onChange={(e) => handleFieldChange('excerpt', e.target.value)}
+                  placeholder="A short summary that appears on the website blog page"
+                  className="min-h-24 rounded-xl border-slate-200"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Main Content
                 </label>
                 <Textarea
                   value={form.content}
                   onChange={(e) => handleFieldChange('content', e.target.value)}
-                  placeholder="Write the full blog content here..."
-                  className="min-h-[320px] rounded-xl border-slate-200"
+                  placeholder="Write the full blog post here..."
+                  className="min-h-[380px] rounded-xl border-slate-200"
                 />
                 <p className="text-xs text-slate-500">
-                  Use blank lines between paragraphs. Lines starting with `1.` become numbered lists,
-                  `-` becomes bullets, and headings can be wrapped in `**double asterisks**`.
+                  Keep a blank line between paragraphs. If needed, lines starting with `1.` become numbered
+                  lists, `-` becomes bullets, and headings can be wrapped in `**double asterisks**`.
                 </p>
               </div>
 

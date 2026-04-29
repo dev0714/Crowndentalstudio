@@ -15,11 +15,19 @@ function isVoiceNoteRecord(record: { document_type?: string; metadata?: Record<s
 }
 
 async function getPatientName(patientId: string) {
-  const { data } = await supabaseServer
+  const { data, error } = await supabaseServer
     .from('patients')
     .select('first_name, last_name')
     .eq('id', patientId)
     .maybeSingle();
+
+  if (error && isMissingRelationError(error)) {
+    return '';
+  }
+
+  if (error) {
+    throw error;
+  }
 
   return `${data?.first_name || ''} ${data?.last_name || ''}`.trim();
 }

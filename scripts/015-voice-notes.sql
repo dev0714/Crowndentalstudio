@@ -3,7 +3,7 @@
 
 create table if not exists public.patient_documents (
   id uuid primary key default gen_random_uuid(),
-  patient_id uuid not null references public.patients(id) on delete cascade,
+  patient_id uuid not null,
   document_type text not null check (
     document_type in (
       'treatment_plan',
@@ -23,7 +23,7 @@ create table if not exists public.patient_documents (
   signature_name text,
   signed_at timestamptz,
   metadata jsonb not null default '{}'::jsonb,
-  created_by uuid references public.users(id),
+  created_by uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

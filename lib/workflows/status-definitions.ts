@@ -31,17 +31,10 @@ export const LAB_CASE_STATUS = {
 export const LAB_CASE_STATUSES = Object.values(LAB_CASE_STATUS);
 
 export const LAB_WORKFLOW_STAGE = {
-  CREATED: 'Created',
-  COLLECTED: 'Collected',
-  RECEIVED_BY_LAB: 'Received by lab',
-  IN_PRODUCTION: 'In production',
-  READY: 'Ready',
-  DISPATCHED: 'Dispatched',
-  RECEIVED_BY_PRACTICE: 'Received by practice',
-  FITTED_TO_PATIENT: 'Fitted to patient',
-  RETURNED_FOR_ADJUSTMENT: 'Returned for adjustment',
-  REMAKE: 'Remake',
-  COMPLETED: 'Completed',
+  NEW_PATIENT: 'New patient',
+  COLLECTED_FROM_STUDIO: 'Collected from Crown Dental Studio',
+  AT_LAB: 'At Lab',
+  DELIVERED_TO_STUDIO: 'Delivered to Crown Dental Studio',
 } as const;
 
 export const LAB_WORKFLOW_STAGES = Object.values(LAB_WORKFLOW_STAGE);

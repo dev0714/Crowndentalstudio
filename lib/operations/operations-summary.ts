@@ -16,8 +16,10 @@ function isOpenLead(status?: string | null) {
   return Boolean(status) && status !== 'Lost' && status !== 'Converted';
 }
 
+const CLOSED_LAB_CASE_VALUES = new Set(['completed', 'delivered', 'delivered to crown dental studio']);
+
 function isOpenLabCase(status?: string | null, workflowStage?: string | null) {
-  return (status || workflowStage || '').toLowerCase() !== 'completed';
+  return !CLOSED_LAB_CASE_VALUES.has((workflowStage || status || '').toLowerCase());
 }
 
 export function buildOperationsSummary(input: OperationsSummaryInput) {

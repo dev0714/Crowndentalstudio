@@ -78,8 +78,6 @@ type WorkflowFormState = {
   lab_driver_name: string;
   worker_name: string;
   expected_return_date: string;
-  comeback_reason: string;
-  patient_happy: boolean;
 };
 
 type NewCaseState = {
@@ -95,64 +93,34 @@ type NewCaseState = {
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  [LAB_WORKFLOW_EVENT_TYPE.SLIP_EMAILED]: 'Slip emailed',
-  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_PATIENT]: 'Collected from patient',
-  [LAB_WORKFLOW_EVENT_TYPE.SENT_TO_LAB]: 'Sent to lab',
-  [LAB_WORKFLOW_EVENT_TYPE.RECEIVED_BY_LAB]: 'Received by lab',
-  [LAB_WORKFLOW_EVENT_TYPE.IN_PRODUCTION]: 'In production',
-  [LAB_WORKFLOW_EVENT_TYPE.READY_FOR_COLLECTION]: 'Ready for collection',
-  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_BY_DRIVER]: 'Collected by driver',
-  [LAB_WORKFLOW_EVENT_TYPE.DROPPED_OFF_BY_ME]: 'Dropped off by me',
-  [LAB_WORKFLOW_EVENT_TYPE.PATIENT_CALLED]: 'Patient called',
-  [LAB_WORKFLOW_EVENT_TYPE.PATIENT_COLLECTED]: 'Patient collected',
-  [LAB_WORKFLOW_EVENT_TYPE.COMEBACK_REQUESTED]: 'Comeback requested',
-  [LAB_WORKFLOW_EVENT_TYPE.RETURNED_FOR_ADJUSTMENT]: 'Returned for adjustment',
-  [LAB_WORKFLOW_EVENT_TYPE.SATISFACTION_SIGNED]: 'Satisfaction signed',
-  [LAB_WORKFLOW_EVENT_TYPE.CASE_CLOSED]: 'Case closed',
+  [LAB_WORKFLOW_EVENT_TYPE.NEW_PATIENT]: 'New patient',
+  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_STUDIO]: 'Collected from Crown Dental Studio',
+  [LAB_WORKFLOW_EVENT_TYPE.AT_LAB]: 'At Lab',
+  [LAB_WORKFLOW_EVENT_TYPE.DELIVERED_TO_STUDIO]: 'Delivered to Crown Dental Studio',
 };
 
 // Short display names for board columns
 const STAGE_SHORT: Record<string, string> = {
-  [LAB_WORKFLOW_STAGE.CREATED]: 'New',
-  [LAB_WORKFLOW_STAGE.COLLECTED]: 'Collected',
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_LAB]: 'At Lab',
-  [LAB_WORKFLOW_STAGE.IN_PRODUCTION]: 'In Prod',
-  [LAB_WORKFLOW_STAGE.READY]: 'Ready',
-  [LAB_WORKFLOW_STAGE.DISPATCHED]: 'Dispatched',
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_PRACTICE]: 'Received',
-  [LAB_WORKFLOW_STAGE.FITTED_TO_PATIENT]: 'Fitted',
-  [LAB_WORKFLOW_STAGE.RETURNED_FOR_ADJUSTMENT]: 'Adjustment',
-  [LAB_WORKFLOW_STAGE.REMAKE]: 'Remake',
-  [LAB_WORKFLOW_STAGE.COMPLETED]: 'Done',
+  [LAB_WORKFLOW_STAGE.NEW_PATIENT]: 'New Patient',
+  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]: 'Collected from Studio',
+  [LAB_WORKFLOW_STAGE.AT_LAB]: 'At Lab',
+  [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]: 'Delivered to Studio',
 };
 
 // Column header gradient + text color
 const COLUMN_STYLE: Record<string, { header: string; badge: string; cardBorder: string; dot: string }> = {
-  [LAB_WORKFLOW_STAGE.CREATED]:               { header: 'bg-gradient-to-r from-blue-600 to-blue-500',      badge: 'bg-blue-400/40 text-white',       cardBorder: 'border-l-blue-400',    dot: 'bg-blue-400' },
-  [LAB_WORKFLOW_STAGE.COLLECTED]:             { header: 'bg-gradient-to-r from-cyan-600 to-cyan-500',       badge: 'bg-cyan-400/40 text-white',        cardBorder: 'border-l-cyan-400',    dot: 'bg-cyan-400' },
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_LAB]:       { header: 'bg-gradient-to-r from-indigo-600 to-indigo-500',   badge: 'bg-indigo-400/40 text-white',      cardBorder: 'border-l-indigo-400',  dot: 'bg-indigo-400' },
-  [LAB_WORKFLOW_STAGE.IN_PRODUCTION]:         { header: 'bg-gradient-to-r from-violet-600 to-violet-500',   badge: 'bg-violet-400/40 text-white',      cardBorder: 'border-l-violet-400',  dot: 'bg-violet-400' },
-  [LAB_WORKFLOW_STAGE.READY]:                 { header: 'bg-gradient-to-r from-emerald-600 to-emerald-500', badge: 'bg-emerald-400/40 text-white',     cardBorder: 'border-l-emerald-400', dot: 'bg-emerald-400' },
-  [LAB_WORKFLOW_STAGE.DISPATCHED]:            { header: 'bg-gradient-to-r from-purple-600 to-purple-500',   badge: 'bg-purple-400/40 text-white',      cardBorder: 'border-l-purple-400',  dot: 'bg-purple-400' },
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_PRACTICE]:  { header: 'bg-gradient-to-r from-teal-600 to-teal-500',       badge: 'bg-teal-400/40 text-white',        cardBorder: 'border-l-teal-400',    dot: 'bg-teal-400' },
-  [LAB_WORKFLOW_STAGE.FITTED_TO_PATIENT]:     { header: 'bg-gradient-to-r from-green-600 to-green-500',     badge: 'bg-green-400/40 text-white',       cardBorder: 'border-l-green-400',   dot: 'bg-green-400' },
-  [LAB_WORKFLOW_STAGE.RETURNED_FOR_ADJUSTMENT]:{ header: 'bg-gradient-to-r from-orange-600 to-orange-500',  badge: 'bg-orange-400/40 text-white',      cardBorder: 'border-l-orange-400',  dot: 'bg-orange-400' },
-  [LAB_WORKFLOW_STAGE.REMAKE]:                { header: 'bg-gradient-to-r from-rose-600 to-rose-500',        badge: 'bg-rose-400/40 text-white',        cardBorder: 'border-l-rose-400',    dot: 'bg-rose-400' },
-  [LAB_WORKFLOW_STAGE.COMPLETED]:             { header: 'bg-gradient-to-r from-slate-600 to-slate-500',      badge: 'bg-slate-400/40 text-white',       cardBorder: 'border-l-slate-400',   dot: 'bg-slate-400' },
+  [LAB_WORKFLOW_STAGE.NEW_PATIENT]:            { header: 'bg-gradient-to-r from-blue-600 to-blue-500',       badge: 'bg-blue-400/40 text-white',    cardBorder: 'border-l-blue-400',    dot: 'bg-blue-400' },
+  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]:  { header: 'bg-gradient-to-r from-cyan-600 to-cyan-500',       badge: 'bg-cyan-400/40 text-white',    cardBorder: 'border-l-cyan-400',    dot: 'bg-cyan-400' },
+  [LAB_WORKFLOW_STAGE.AT_LAB]:                 { header: 'bg-gradient-to-r from-violet-600 to-violet-500',   badge: 'bg-violet-400/40 text-white',  cardBorder: 'border-l-violet-400',  dot: 'bg-violet-400' },
+  [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]:    { header: 'bg-gradient-to-r from-emerald-600 to-emerald-500', badge: 'bg-emerald-400/40 text-white', cardBorder: 'border-l-emerald-400', dot: 'bg-emerald-400' },
 };
 
 // Map target stage → best event type for the API
 const STAGE_TO_EVENT: Record<string, string> = {
-  [LAB_WORKFLOW_STAGE.COLLECTED]:             LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_PATIENT,
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_LAB]:       LAB_WORKFLOW_EVENT_TYPE.RECEIVED_BY_LAB,
-  [LAB_WORKFLOW_STAGE.IN_PRODUCTION]:         LAB_WORKFLOW_EVENT_TYPE.IN_PRODUCTION,
-  [LAB_WORKFLOW_STAGE.READY]:                 LAB_WORKFLOW_EVENT_TYPE.READY_FOR_COLLECTION,
-  [LAB_WORKFLOW_STAGE.DISPATCHED]:            LAB_WORKFLOW_EVENT_TYPE.COLLECTED_BY_DRIVER,
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_PRACTICE]:  LAB_WORKFLOW_EVENT_TYPE.DROPPED_OFF_BY_ME,
-  [LAB_WORKFLOW_STAGE.FITTED_TO_PATIENT]:     LAB_WORKFLOW_EVENT_TYPE.PATIENT_COLLECTED,
-  [LAB_WORKFLOW_STAGE.RETURNED_FOR_ADJUSTMENT]: LAB_WORKFLOW_EVENT_TYPE.RETURNED_FOR_ADJUSTMENT,
-  [LAB_WORKFLOW_STAGE.REMAKE]:                LAB_WORKFLOW_EVENT_TYPE.COMEBACK_REQUESTED,
-  [LAB_WORKFLOW_STAGE.COMPLETED]:             LAB_WORKFLOW_EVENT_TYPE.SATISFACTION_SIGNED,
+  [LAB_WORKFLOW_STAGE.NEW_PATIENT]:           LAB_WORKFLOW_EVENT_TYPE.NEW_PATIENT,
+  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]: LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_STUDIO,
+  [LAB_WORKFLOW_STAGE.AT_LAB]:                LAB_WORKFLOW_EVENT_TYPE.AT_LAB,
+  [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]:   LAB_WORKFLOW_EVENT_TYPE.DELIVERED_TO_STUDIO,
 };
 
 function defaultNewCaseState(): NewCaseState {
@@ -165,21 +133,19 @@ function defaultNewCaseState(): NewCaseState {
     shade: '',
     slip_text: '',
     description: '',
-    workflow_stage: LAB_WORKFLOW_STAGE.CREATED,
+    workflow_stage: LAB_WORKFLOW_STAGE.NEW_PATIENT,
   };
 }
 
 function defaultWorkflowForm(): WorkflowFormState {
   return {
-    event_type: LAB_WORKFLOW_EVENT_TYPE.SLIP_EMAILED,
+    event_type: LAB_WORKFLOW_EVENT_TYPE.NEW_PATIENT,
     notes: '',
-    workflow_stage: LAB_WORKFLOW_STAGE.CREATED,
+    workflow_stage: LAB_WORKFLOW_STAGE.NEW_PATIENT,
     shade: '',
     lab_driver_name: '',
     worker_name: '',
     expected_return_date: '',
-    comeback_reason: '',
-    patient_happy: false,
   };
 }
 
@@ -268,7 +234,7 @@ function LabContent() {
     setActiveWorkflowCaseId(labCase.id);
     setWorkflowForm({
       ...defaultWorkflowForm(),
-      workflow_stage: labCase.workflow_stage || LAB_WORKFLOW_STAGE.CREATED,
+      workflow_stage: labCase.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT,
       shade: labCase.shade || '',
       expected_return_date: labCase.expected_return_date || '',
     });
@@ -303,8 +269,6 @@ function LabContent() {
           lab_driver_name: workflowForm.lab_driver_name,
           worker_name: workflowForm.worker_name,
           expected_return_date: workflowForm.expected_return_date,
-          comeback_reason: workflowForm.comeback_reason,
-          patient_happy: workflowForm.patient_happy,
         }),
       });
       const payload = await response.json().catch(() => ({}));
@@ -355,7 +319,7 @@ function LabContent() {
       prev.map((c) => (c.id === caseId ? { ...c, workflow_stage: targetStage } : c)),
     );
 
-    const eventType = STAGE_TO_EVENT[targetStage] || LAB_WORKFLOW_EVENT_TYPE.SLIP_EMAILED;
+    const eventType = STAGE_TO_EVENT[targetStage] || LAB_WORKFLOW_EVENT_TYPE.NEW_PATIENT;
 
     try {
       setSavingCaseId(caseId);
@@ -389,17 +353,10 @@ function LabContent() {
   const recallCases = labCases.filter((item) => item.workflow_snapshot?.requires_recall);
 
   const columns = [
-    LAB_WORKFLOW_STAGE.CREATED,
-    LAB_WORKFLOW_STAGE.COLLECTED,
-    LAB_WORKFLOW_STAGE.RECEIVED_BY_LAB,
-    LAB_WORKFLOW_STAGE.IN_PRODUCTION,
-    LAB_WORKFLOW_STAGE.READY,
-    LAB_WORKFLOW_STAGE.DISPATCHED,
-    LAB_WORKFLOW_STAGE.RECEIVED_BY_PRACTICE,
-    LAB_WORKFLOW_STAGE.FITTED_TO_PATIENT,
-    LAB_WORKFLOW_STAGE.RETURNED_FOR_ADJUSTMENT,
-    LAB_WORKFLOW_STAGE.REMAKE,
-    LAB_WORKFLOW_STAGE.COMPLETED,
+    LAB_WORKFLOW_STAGE.NEW_PATIENT,
+    LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO,
+    LAB_WORKFLOW_STAGE.AT_LAB,
+    LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO,
   ];
 
   return (
@@ -408,9 +365,9 @@ function LabContent() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Lab Workflow Engine</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Lab Tracker</h1>
             <p className="text-slate-500 text-sm mt-0.5">
-              Track collection, slip handling, shade, lab handoff, and final sign-off
+              Track cases from new patient, collection from Crown Dental Studio, at lab, to delivery back at the studio
             </p>
           </div>
           <div className="flex gap-2">
@@ -431,9 +388,9 @@ function LabContent() {
       <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Open Cases', value: openCases.length, gradient: 'from-blue-600 to-cyan-500' },
-          { label: 'Ready for Collection', value: labCases.filter((item) => item.workflow_stage === LAB_WORKFLOW_STAGE.READY).length, gradient: 'from-emerald-600 to-teal-500' },
+          { label: 'At Lab', value: labCases.filter((item) => item.workflow_stage === LAB_WORKFLOW_STAGE.AT_LAB).length, gradient: 'from-violet-600 to-purple-500' },
           { label: 'Recall Needed', value: recallCases.length, gradient: 'from-amber-500 to-orange-500' },
-          { label: 'Completed', value: closedCases.length, gradient: 'from-slate-600 to-slate-800' },
+          { label: 'Delivered', value: closedCases.length, gradient: 'from-emerald-600 to-teal-500' },
         ].map((card) => (
           <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
             <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -512,17 +469,17 @@ function LabContent() {
               <p className="text-xs text-slate-400">{labCases.length} cases · drag cards to move stages</p>
             </div>
             <div className="overflow-x-auto pb-4">
-              <div className="flex gap-3" style={{ minWidth: `${columns.length * 210}px`, padding: '0 2px' }}>
+              <div className="flex gap-3" style={{ minWidth: `${columns.length * 250}px`, padding: '0 2px' }}>
                 {columns.map((stage) => {
                   const style = COLUMN_STYLE[stage] || { header: 'bg-slate-600', badge: 'bg-slate-400/40 text-white', cardBorder: 'border-l-slate-400', dot: 'bg-slate-400' };
-                  const columnCases = labCases.filter((item) => (item.workflow_stage || LAB_WORKFLOW_STAGE.CREATED) === stage);
+                  const columnCases = labCases.filter((item) => (item.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT) === stage);
                   const isOver = dragOverStage === stage;
 
                   return (
                     <div
                       key={stage}
-                      className="flex flex-col rounded-2xl overflow-hidden shadow-sm border border-slate-200/80"
-                      style={{ width: '200px', minWidth: '200px' }}
+                      className="flex flex-col flex-1 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80"
+                      style={{ minWidth: '240px' }}
                       onDragOver={(e) => handleDragOver(e, stage)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, stage)}
@@ -687,7 +644,7 @@ function LabContent() {
                 {labCases.map((labCase) => {
                   const isOpen = activeWorkflowCaseId === labCase.id;
                   const timeline = labCase.workflow_snapshot?.timeline || [];
-                  const style = COLUMN_STYLE[labCase.workflow_stage] || COLUMN_STYLE[LAB_WORKFLOW_STAGE.CREATED];
+                  const style = COLUMN_STYLE[labCase.workflow_stage] || COLUMN_STYLE[LAB_WORKFLOW_STAGE.NEW_PATIENT];
 
                   return (
                     <div key={labCase.id} className={`rounded-xl border bg-white p-4 hover:border-blue-200 transition-colors border-l-4 ${style.cardBorder}`}>
@@ -695,7 +652,7 @@ function LabContent() {
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-2">
                             <span className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${style.header}`}>
-                              {stageLabel(labCase.workflow_stage || LAB_WORKFLOW_STAGE.CREATED)}
+                              {stageLabel(labCase.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT)}
                             </span>
                             {labCase.workflow_snapshot?.requires_recall && (
                               <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">Recall required</span>
@@ -773,16 +730,8 @@ function LabContent() {
                           </div>
                           <div className="grid grid-cols-1 gap-4">
                             <label className="space-y-1.5">
-                              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Comeback reason</span>
-                              <Input value={workflowForm.comeback_reason} onChange={(e) => updateWorkflowForm('comeback_reason', e.target.value)} placeholder="Reason if adjustment needed" className="rounded-xl border-slate-200" />
-                            </label>
-                            <label className="space-y-1.5">
                               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Notes</span>
                               <Textarea value={workflowForm.notes} onChange={(e) => updateWorkflowForm('notes', e.target.value)} rows={3} className="rounded-xl border-slate-200" />
-                            </label>
-                            <label className="flex items-center gap-2 text-sm text-slate-700">
-                              <input type="checkbox" checked={workflowForm.patient_happy} onChange={(e) => updateWorkflowForm('patient_happy', e.target.checked)} className="w-4 h-4" />
-                              Patient is happy at recall and case can be closed
                             </label>
                           </div>
                           <div className="flex flex-wrap gap-3">

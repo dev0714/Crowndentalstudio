@@ -3,20 +3,10 @@ import { LAB_WORKFLOW_STAGE } from '@/lib/workflows/status-definitions';
 export type LabWorkflowStage = (typeof LAB_WORKFLOW_STAGE)[keyof typeof LAB_WORKFLOW_STAGE];
 
 export const LAB_WORKFLOW_EVENT_TYPE = {
-  SLIP_EMAILED: 'slip_emailed',
-  COLLECTED_FROM_PATIENT: 'collected_from_patient',
-  SENT_TO_LAB: 'sent_to_lab',
-  RECEIVED_BY_LAB: 'received_by_lab',
-  IN_PRODUCTION: 'in_production',
-  READY_FOR_COLLECTION: 'ready_for_collection',
-  COLLECTED_BY_DRIVER: 'collected_by_driver',
-  DROPPED_OFF_BY_ME: 'dropped_off_by_me',
-  PATIENT_CALLED: 'patient_called',
-  PATIENT_COLLECTED: 'patient_collected',
-  COMEBACK_REQUESTED: 'comeback_requested',
-  RETURNED_FOR_ADJUSTMENT: 'returned_for_adjustment',
-  SATISFACTION_SIGNED: 'satisfaction_signed',
-  CASE_CLOSED: 'case_closed',
+  NEW_PATIENT: 'new_patient',
+  COLLECTED_FROM_STUDIO: 'collected_from_studio',
+  AT_LAB: 'at_lab',
+  DELIVERED_TO_STUDIO: 'delivered_to_studio',
 } as const;
 
 export type LabWorkflowEventType = (typeof LAB_WORKFLOW_EVENT_TYPE)[keyof typeof LAB_WORKFLOW_EVENT_TYPE];
@@ -81,34 +71,54 @@ export type LabWorkflowUpdate = {
 };
 
 const STAGE_TO_STATUS: Record<LabWorkflowStage, string> = {
-  [LAB_WORKFLOW_STAGE.CREATED]: 'Received',
-  [LAB_WORKFLOW_STAGE.COLLECTED]: 'In Progress',
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_LAB]: 'In Progress',
-  [LAB_WORKFLOW_STAGE.IN_PRODUCTION]: 'In Progress',
-  [LAB_WORKFLOW_STAGE.READY]: 'Ready',
-  [LAB_WORKFLOW_STAGE.DISPATCHED]: 'Ready',
-  [LAB_WORKFLOW_STAGE.RECEIVED_BY_PRACTICE]: 'Ready',
-  [LAB_WORKFLOW_STAGE.FITTED_TO_PATIENT]: 'Delivered',
-  [LAB_WORKFLOW_STAGE.RETURNED_FOR_ADJUSTMENT]: 'On Hold',
-  [LAB_WORKFLOW_STAGE.REMAKE]: 'On Hold',
-  [LAB_WORKFLOW_STAGE.COMPLETED]: 'Delivered',
+  [LAB_WORKFLOW_STAGE.NEW_PATIENT]: 'Received',
+  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]: 'In Progress',
+  [LAB_WORKFLOW_STAGE.AT_LAB]: 'In Progress',
+  [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]: 'Delivered',
+};
+
+const EVENT_TO_STAGE: Record<LabWorkflowEventType, LabWorkflowStage> = {
+  [LAB_WORKFLOW_EVENT_TYPE.NEW_PATIENT]: LAB_WORKFLOW_STAGE.NEW_PATIENT,
+  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_STUDIO]: LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO,
+  [LAB_WORKFLOW_EVENT_TYPE.AT_LAB]: LAB_WORKFLOW_STAGE.AT_LAB,
+  [LAB_WORKFLOW_EVENT_TYPE.DELIVERED_TO_STUDIO]: LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO,
+};
+
+// Stage values written before the tracker was simplified to four stages.
+const LEGACY_STAGE_MAP: Record<string, LabWorkflowStage> = {
+  Created: LAB_WORKFLOW_STAGE.NEW_PATIENT,
+  Collected: LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO,
+  'Received by lab': LAB_WORKFLOW_STAGE.AT_LAB,
+  'In production': LAB_WORKFLOW_STAGE.AT_LAB,
+  Ready: LAB_WORKFLOW_STAGE.AT_LAB,
+  Dispatched: LAB_WORKFLOW_STAGE.AT_LAB,
+  'Returned for adjustment': LAB_WORKFLOW_STAGE.AT_LAB,
+  Remake: LAB_WORKFLOW_STAGE.AT_LAB,
+  'Received by practice': LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO,
+  'Fitted to patient': LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO,
+  Completed: LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO,
 };
 
 const EVENT_LABELS: Record<string, string> = {
-  [LAB_WORKFLOW_EVENT_TYPE.SLIP_EMAILED]: 'Slip emailed',
-  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_PATIENT]: 'Collected from patient',
-  [LAB_WORKFLOW_EVENT_TYPE.SENT_TO_LAB]: 'Sent to lab',
-  [LAB_WORKFLOW_EVENT_TYPE.RECEIVED_BY_LAB]: 'Received by lab',
-  [LAB_WORKFLOW_EVENT_TYPE.IN_PRODUCTION]: 'In production',
-  [LAB_WORKFLOW_EVENT_TYPE.READY_FOR_COLLECTION]: 'Ready for collection',
-  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_BY_DRIVER]: 'Collected by driver',
-  [LAB_WORKFLOW_EVENT_TYPE.DROPPED_OFF_BY_ME]: 'Dropped off by me',
-  [LAB_WORKFLOW_EVENT_TYPE.PATIENT_CALLED]: 'Patient called',
-  [LAB_WORKFLOW_EVENT_TYPE.PATIENT_COLLECTED]: 'Patient collected',
-  [LAB_WORKFLOW_EVENT_TYPE.COMEBACK_REQUESTED]: 'Comeback requested',
-  [LAB_WORKFLOW_EVENT_TYPE.RETURNED_FOR_ADJUSTMENT]: 'Returned for adjustment',
-  [LAB_WORKFLOW_EVENT_TYPE.SATISFACTION_SIGNED]: 'Satisfaction signed',
-  [LAB_WORKFLOW_EVENT_TYPE.CASE_CLOSED]: 'Case closed',
+  [LAB_WORKFLOW_EVENT_TYPE.NEW_PATIENT]: 'New patient',
+  [LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_STUDIO]: 'Collected from Crown Dental Studio',
+  [LAB_WORKFLOW_EVENT_TYPE.AT_LAB]: 'At Lab',
+  [LAB_WORKFLOW_EVENT_TYPE.DELIVERED_TO_STUDIO]: 'Delivered to Crown Dental Studio',
+  // Legacy event types kept so old timeline entries still read well.
+  slip_emailed: 'Slip emailed',
+  collected_from_patient: 'Collected from patient',
+  sent_to_lab: 'Sent to lab',
+  received_by_lab: 'Received by lab',
+  in_production: 'In production',
+  ready_for_collection: 'Ready for collection',
+  collected_by_driver: 'Collected by driver',
+  dropped_off_by_me: 'Dropped off by me',
+  patient_called: 'Patient called',
+  patient_collected: 'Patient collected',
+  comeback_requested: 'Comeback requested',
+  returned_for_adjustment: 'Returned for adjustment',
+  satisfaction_signed: 'Satisfaction signed',
+  case_closed: 'Case closed',
 };
 
 function isLabWorkflowStage(value: string | null | undefined): value is LabWorkflowStage {
@@ -127,22 +137,25 @@ function toIso(value: string | null | undefined) {
 
 function defaultStageForStatus(status: string | null | undefined): LabWorkflowStage {
   switch (status) {
-    case 'Ready':
-      return LAB_WORKFLOW_STAGE.READY;
     case 'Delivered':
-      return LAB_WORKFLOW_STAGE.COMPLETED;
-    case 'On Hold':
-      return LAB_WORKFLOW_STAGE.REMAKE;
+      return LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO;
+    case 'Ready':
     case 'In Progress':
-      return LAB_WORKFLOW_STAGE.IN_PRODUCTION;
+    case 'Quality Check':
+    case 'On Hold':
+      return LAB_WORKFLOW_STAGE.AT_LAB;
     default:
-      return LAB_WORKFLOW_STAGE.CREATED;
+      return LAB_WORKFLOW_STAGE.NEW_PATIENT;
   }
 }
 
 export function deriveLabWorkflowStage(labCase: LabWorkflowCase): LabWorkflowStage {
   if (isLabWorkflowStage(labCase.workflow_stage)) {
     return labCase.workflow_stage;
+  }
+
+  if (labCase.workflow_stage && LEGACY_STAGE_MAP[labCase.workflow_stage]) {
+    return LEGACY_STAGE_MAP[labCase.workflow_stage];
   }
 
   return defaultStageForStatus(labCase.status || null);
@@ -170,17 +183,17 @@ export function buildLabWorkflowSnapshot(
 
   const lastEvent = sortedEvents[sortedEvents.length - 1];
   const currentStage = deriveLabWorkflowStage(labCase);
-  const isClosed = Boolean(labCase.closed_at || currentStage === LAB_WORKFLOW_STAGE.COMPLETED);
-  const hasSatisfaction = sortedEvents.some((event) => event.event_type === LAB_WORKFLOW_EVENT_TYPE.SATISFACTION_SIGNED)
+  const isClosed = Boolean(labCase.closed_at || currentStage === LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO);
+  const hasSatisfaction = sortedEvents.some((event) => event.event_type === 'satisfaction_signed')
     || Boolean(labCase.satisfaction_signed_at);
-  const hasPatientCollected = sortedEvents.some((event) => event.event_type === LAB_WORKFLOW_EVENT_TYPE.PATIENT_COLLECTED)
+  const hasPatientCollected = sortedEvents.some((event) => event.event_type === 'patient_collected')
     || Boolean(labCase.patient_collected_at);
 
   return {
     current_stage: currentStage,
     is_closed: isClosed,
-    requires_recall: hasPatientCollected && !hasSatisfaction && !isClosed,
-    can_close: hasSatisfaction && !isClosed,
+    requires_recall: hasPatientCollected && !hasSatisfaction && !labCase.closed_at,
+    can_close: currentStage === LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO && !labCase.closed_at,
     timeline: lastEvent
       ? timeline
       : [],
@@ -193,14 +206,12 @@ export function resolveLabWorkflowUpdate(
   nowIso = new Date().toISOString(),
 ): LabWorkflowUpdate {
   const notes = String(body.notes || '').trim();
-  const patientHappy = Boolean(body.patient_happy);
   const requestedStage = String(body.workflow_stage || '').trim();
   const shade = String(body.shade || '').trim();
   const labDriverName = String(body.lab_driver_name || '').trim();
   const workerName = String(body.worker_name || '').trim();
   const expectedReturnDate = String(body.expected_return_date || '').trim();
   const slipText = String(body.slip_text || '').trim();
-  const comebackReason = String(body.comeback_reason || '').trim();
 
   const metadata: Record<string, unknown> = {
     event_type: eventType,
@@ -216,90 +227,23 @@ export function resolveLabWorkflowUpdate(
   if (workerName) patch.worker_name = workerName;
   if (expectedReturnDate) patch.expected_return_date = expectedReturnDate;
   if (slipText) patch.slip_text = slipText;
-  if (comebackReason) patch.comeback_reason = comebackReason;
 
-  switch (eventType) {
-    case LAB_WORKFLOW_EVENT_TYPE.SLIP_EMAILED:
-      patch.slip_sent_at = nowIso;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.CREATED;
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_PATIENT:
-      patch.collected_at = nowIso;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.COLLECTED;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.SENT_TO_LAB:
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.DISPATCHED;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.RECEIVED_BY_LAB:
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.RECEIVED_BY_LAB;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.IN_PRODUCTION:
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.IN_PRODUCTION;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.READY_FOR_COLLECTION:
-      patch.ready_for_collection_at = nowIso;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.READY;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.COLLECTED_BY_DRIVER:
-      patch.collected_by_driver_at = nowIso;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.DISPATCHED;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.DROPPED_OFF_BY_ME:
-      patch.dropped_off_by_me_at = nowIso;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.RECEIVED_BY_PRACTICE;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.PATIENT_CALLED:
-      patch.patient_called_at = nowIso;
-      if (requestedStage && isLabWorkflowStage(requestedStage)) {
-        patch.workflow_stage = requestedStage;
-        patch.status = labStatusForWorkflowStage(requestedStage);
-      }
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.PATIENT_COLLECTED:
-      patch.patient_collected_at = nowIso;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.FITTED_TO_PATIENT;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.COMEBACK_REQUESTED:
-      patch.comeback_requested_at = nowIso;
-      patch.comeback_reason = comebackReason || notes || 'Comeback requested';
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.RETURNED_FOR_ADJUSTMENT;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.RETURNED_FOR_ADJUSTMENT:
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.REMAKE;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.SATISFACTION_SIGNED:
-      patch.satisfaction_signed_at = nowIso;
-      metadata.patient_happy = patientHappy;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.COMPLETED;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    case LAB_WORKFLOW_EVENT_TYPE.CASE_CLOSED:
-      if (!patientHappy) {
-        throw new Error('Patient satisfaction must be confirmed before closing a lab case');
-      }
-      patch.satisfaction_signed_at = nowIso;
-      patch.closed_at = nowIso;
-      metadata.patient_happy = true;
-      patch.workflow_stage = requestedStage || LAB_WORKFLOW_STAGE.COMPLETED;
-      patch.status = labStatusForWorkflowStage(patch.workflow_stage as LabWorkflowStage);
-      break;
-    default:
-      if (requestedStage) {
-        patch.workflow_stage = requestedStage;
-        if (isLabWorkflowStage(requestedStage)) {
-          patch.status = labStatusForWorkflowStage(requestedStage);
-        }
-      }
+  const stageForRequest = isLabWorkflowStage(requestedStage)
+    ? requestedStage
+    : LEGACY_STAGE_MAP[requestedStage];
+  const nextStage = stageForRequest || EVENT_TO_STAGE[eventType];
+
+  if (eventType === LAB_WORKFLOW_EVENT_TYPE.COLLECTED_FROM_STUDIO) {
+    patch.collected_at = nowIso;
+  }
+
+  if (eventType === LAB_WORKFLOW_EVENT_TYPE.DELIVERED_TO_STUDIO) {
+    patch.dropped_off_by_me_at = nowIso;
+  }
+
+  if (nextStage) {
+    patch.workflow_stage = nextStage;
+    patch.status = labStatusForWorkflowStage(nextStage);
   }
 
   if (shade) {
@@ -320,19 +264,6 @@ export function resolveLabWorkflowUpdate(
 
   if (slipText) {
     metadata.slip_text = slipText;
-  }
-
-  if (comebackReason) {
-    metadata.comeback_reason = comebackReason;
-  }
-
-  const nextStage = patch.workflow_stage && isLabWorkflowStage(String(patch.workflow_stage))
-    ? (patch.workflow_stage as LabWorkflowStage)
-    : undefined;
-
-  if (nextStage) {
-    patch.workflow_stage = nextStage;
-    patch.status = labStatusForWorkflowStage(nextStage);
   }
 
   return { patch, metadata, next_stage: nextStage };

@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       const workflowSnapshot = buildLabWorkflowSnapshot(
         {
           ...data,
-          workflow_stage: data.workflow_stage || deriveLabWorkflowStage(data),
+          workflow_stage: deriveLabWorkflowStage(data),
         },
         workflowEvents,
       );
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         data: {
           ...data,
           patient_name: patientNames[data.patient_id] || data.patient_id,
-          workflow_stage: data.workflow_stage || workflowSnapshot.current_stage,
+          workflow_stage: workflowSnapshot.current_stage,
           status: data.status || labStatusForWorkflowStage(workflowSnapshot.current_stage),
           workflow_snapshot: workflowSnapshot,
           events: workflowEvents,
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
     const eventsByCase = includeEvents ? await getLabWorkflowEvents((data || []).map((item) => item.id)) : {};
     return NextResponse.json({
       data: (data || []).map((item) => {
-        const workflowStage = item.workflow_stage || deriveLabWorkflowStage(item);
+        const workflowStage = deriveLabWorkflowStage(item);
         const workflowEvents = eventsByCase[item.id] || [];
         const workflowSnapshot = includeEvents
           ? buildLabWorkflowSnapshot(
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const workflowStage = (body.workflow_stage || LAB_WORKFLOW_STAGE.CREATED) as LabWorkflowStage;
+    const workflowStage = (body.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT) as LabWorkflowStage;
     const caseData = {
       ...body,
       status: body.status || labStatusForWorkflowStage(workflowStage),

@@ -18,6 +18,16 @@ interface Appointment {
   duration_minutes: number;
   appointment_type: string;
   status: string;
+  room_number?: string | null;
+  assigned_doctor?: string | null;
+  notes?: string | null;
+}
+
+// datetime-local inputs need "YYYY-MM-DDTHH:mm" in local time
+function toDatetimeLocal(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
 interface PatientOption {
@@ -36,6 +46,7 @@ function AppointmentsContent() {
   const [loading, setLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(shouldOpenBooking);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
   const [bookingForm, setBookingForm] = useState({
     patient_id: prefillPatientId,
     appointment_date: '',
@@ -44,6 +55,7 @@ function AppointmentsContent() {
     room_number: '',
     assigned_doctor: '',
     notes: '',
+    status: 'Scheduled',
   });
   const [error, setError] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -144,7 +156,43 @@ function AppointmentsContent() {
     }
   }, [prefillPatientId]);
 
-  const handleBookAppointment = async () => {
+  const resetBookingForm = () => {
+    setBookingForm((prev) => ({
+      ...prev,
+      appointment_date: '',
+      appointment_type: 'Consult',
+      duration_minutes: '30',
+      room_number: '',
+      assigned_doctor: '',
+      notes: '',
+      status: 'Scheduled',
+    }));
+  };
+
+  const openEditAppointment = (apt: Appointment) => {
+    setSelectedAppointment(null);
+    setEditingAppointmentId(apt.id);
+    setBookingForm({
+      patient_id: apt.patient_id,
+      appointment_date: toDatetimeLocal(apt.appointment_date),
+      appointment_type: apt.appointment_type,
+      duration_minutes: String(apt.duration_minutes || 30),
+      room_number: apt.room_number || '',
+      assigned_doctor: apt.assigned_doctor || '',
+      notes: apt.notes || '',
+      status: apt.status || 'Scheduled',
+    });
+    setError(null);
+    setIsBookingOpen(true);
+  };
+
+  const closeBookingDialog = () => {
+    setIsBookingOpen(false);
+    setEditingAppointmentId(null);
+    resetBookingForm();
+  };
+
+  const handleSaveAppointment = async () => {
     if (!bookingForm.patient_id || !bookingForm.appointment_date || !bookingForm.appointment_type) {
       setError('Patient, date, and appointment type are required');
       return;
@@ -154,8 +202,12 @@ function AppointmentsContent() {
     setError(null);
 
     try {
-      const response = await fetch('/api/crm/appointments', {
-        method: 'POST',
+      const isEditing = Boolean(editingAppointmentId);
+      const url = isEditing
+        ? `/api/crm/appointments?id=${editingAppointmentId}`
+        : '/api/crm/appointments';
+      const response = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
@@ -168,28 +220,20 @@ function AppointmentsContent() {
           room_number: bookingForm.room_number || null,
           assigned_doctor: bookingForm.assigned_doctor || null,
           notes: bookingForm.notes || null,
+          ...(isEditing ? { status: bookingForm.status } : {}),
         }),
       });
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload.error || 'Failed to book appointment');
+        throw new Error(payload.error || (isEditing ? 'Failed to update appointment' : 'Failed to book appointment'));
       }
 
-      setIsBookingOpen(false);
-      setBookingForm((prev) => ({
-        ...prev,
-        appointment_date: '',
-        appointment_type: 'Consult',
-        duration_minutes: '30',
-        room_number: '',
-        assigned_doctor: '',
-        notes: '',
-      }));
+      closeBookingDialog();
       await loadAppointments();
     } catch (err) {
-      console.error('[v0] Error booking appointment:', err);
-      setError(err instanceof Error ? err.message : 'Failed to book appointment');
+      console.error('[v0] Error saving appointment:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save appointment');
     } finally {
       setIsSaving(false);
     }
@@ -224,11 +268,15 @@ function AppointmentsContent() {
           </Button>
         </div>
 
-        <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+        <Dialog open={isBookingOpen} onOpenChange={(open) => (open ? setIsBookingOpen(true) : closeBookingDialog())}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Book Appointment</DialogTitle>
-              <DialogDescription>Create a new appointment for an existing patient.</DialogDescription>
+              <DialogTitle>{editingAppointmentId ? 'Edit Appointment' : 'Book Appointment'}</DialogTitle>
+              <DialogDescription>
+                {editingAppointmentId
+                  ? 'Update the details of this appointment.'
+                  : 'Create a new appointment for an existing patient.'}
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-2">
               <div className="grid gap-2">
@@ -296,6 +344,21 @@ function AppointmentsContent() {
                   />
                 </div>
               </div>
+              {editingAppointmentId && (
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status</Label>
+                  <select
+                    id="status"
+                    value={bookingForm.status}
+                    onChange={(e) => setBookingForm((prev) => ({ ...prev, status: e.target.value }))}
+                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                  >
+                    {Object.values(APPOINTMENT_STATUS).map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="notes">Notes</Label>
                 <textarea
@@ -308,15 +371,17 @@ function AppointmentsContent() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsBookingOpen(false)} disabled={isSaving}>
+              <Button variant="outline" onClick={closeBookingDialog} disabled={isSaving}>
                 Cancel
               </Button>
               <Button
-                onClick={handleBookAppointment}
+                onClick={handleSaveAppointment}
                 disabled={isSaving}
                 className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
               >
-                {isSaving ? 'Booking…' : 'Book Appointment'}
+                {isSaving
+                  ? 'Saving…'
+                  : editingAppointmentId ? 'Save Changes' : 'Book Appointment'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -358,6 +423,18 @@ function AppointmentsContent() {
                     <p className="font-medium text-slate-500">Type</p>
                     <p className="text-slate-900">{selectedAppointment.appointment_type}</p>
                   </div>
+                  {selectedAppointment.room_number && (
+                    <div>
+                      <p className="font-medium text-slate-500">Room</p>
+                      <p className="text-slate-900">{selectedAppointment.room_number}</p>
+                    </div>
+                  )}
+                  {selectedAppointment.notes && (
+                    <div className="col-span-2">
+                      <p className="font-medium text-slate-500">Notes</p>
+                      <p className="text-slate-900 whitespace-pre-wrap">{selectedAppointment.notes}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -365,6 +442,14 @@ function AppointmentsContent() {
               <Button variant="outline" onClick={() => setSelectedAppointment(null)}>
                 Close
               </Button>
+              {selectedAppointment && (
+                <Button
+                  onClick={() => openEditAppointment(selectedAppointment)}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                >
+                  Edit
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -514,9 +599,14 @@ function AppointmentsContent() {
                             <span className={`text-xs font-semibold px-2 py-1 rounded ${statusColor(apt.status)}`}>
                               {apt.status}
                             </span>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedAppointment(apt)}>
-                              Details
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => setSelectedAppointment(apt)}>
+                                Details
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openEditAppointment(apt)}>
+                                Edit
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))

@@ -44,6 +44,22 @@ function stripWorkflowFields(payload: Record<string, unknown>) {
   return Object.fromEntries(Object.entries(payload).filter(([key]) => !WORKFLOW_FIELDS.includes(key as (typeof WORKFLOW_FIELDS)[number])));
 }
 
+// Postgres rejects '' for date/uuid columns, so blank form fields must become null.
+function normalizeEmptyStrings(payload: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(payload).map(([key, value]) => [
+      key,
+      typeof value === 'string' && value.trim() === '' ? null : value,
+    ]),
+  );
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  const message = (error as { message?: string } | null)?.message;
+  return message || fallback;
+}
+
 async function getPatientNames(patientIds: string[]) {
   if (patientIds.length === 0) {
     return {};
@@ -195,7 +211,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = normalizeEmptyStrings(await request.json());
+
+    if (!body.patient_id || !body.case_type) {
+      return NextResponse.json(
+        { error: 'Missing required fields: patient_id, case_type' },
+        { status: 400 },
+      );
+    }
 
     const { data: userData } = await supabaseServer
       .from('users')
@@ -250,7 +273,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: data[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating lab case:', error);
-    return NextResponse.json({ error: 'Failed to create lab case' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error, 'Failed to create lab case') }, { status: 500 });
   }
 }
 
@@ -268,7 +291,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Lab Case ID required' }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body = normalizeEmptyStrings(await request.json());
     const workflowStage = body.workflow_stage ? (String(body.workflow_stage) as LabWorkflowStage) : undefined;
     const nextStatus = workflowStage ? labStatusForWorkflowStage(workflowStage) : body.status;
 
@@ -316,7 +339,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ data: data[0] });
   } catch (error) {
     console.error('Error updating lab case:', error);
-    return NextResponse.json({ error: 'Failed to update lab case' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error, 'Failed to update lab case') }, { status: 500 });
   }
 }
 

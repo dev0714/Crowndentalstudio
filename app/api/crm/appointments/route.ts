@@ -159,9 +159,16 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
+    const sanitizedBody = {
+      ...body,
+      ...('assigned_doctor' in body
+        ? { assigned_doctor: isValidUUID(body.assigned_doctor) ? body.assigned_doctor : null }
+        : {}),
+    };
+
     const { data, error } = await supabaseServer
       .from('appointments')
-      .update({ ...body, updated_at: new Date().toISOString() })
+      .update({ ...sanitizedBody, updated_at: new Date().toISOString() })
       .eq('id', appointmentId)
       .select();
 

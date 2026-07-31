@@ -4,6 +4,22 @@ import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { writeAuditEntry } from '@/lib/audit/write-audit-entry';
 import { supabaseServer } from '@/lib/supabase/server';
 
+// Postgres rejects '' for date/numeric/uuid columns, so blank form fields must become null.
+function normalizeEmptyStrings<T extends Record<string, unknown>>(payload: T): T {
+  return Object.fromEntries(
+    Object.entries(payload).map(([key, value]) => [
+      key,
+      typeof value === 'string' && value.trim() === '' ? null : value,
+    ]),
+  ) as T;
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) return error.message;
+  const message = (error as { message?: string } | null)?.message;
+  return message || fallback;
+}
+
 // GET - Fetch all patients or specific patient
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body: CreatePatientRequest = await request.json();
+    const body: CreatePatientRequest = normalizeEmptyStrings(await request.json());
 
     // Get current user's ID from users table
     const { data: userData, error: userError } = await supabaseServer
@@ -86,7 +102,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: data[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating patient:', error);
-    return NextResponse.json({ error: 'Failed to create patient' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error, 'Failed to create patient') }, { status: 500 });
   }
 }
 
@@ -105,7 +121,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Patient ID required' }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body = normalizeEmptyStrings(await request.json());
 
     const { data, error } = await supabaseServer
       .from('patients')
@@ -124,7 +140,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ data: data[0] });
   } catch (error) {
     console.error('Error updating patient:', error);
-    return NextResponse.json({ error: 'Failed to update patient' }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error, 'Failed to update patient') }, { status: 500 });
   }
 }
 

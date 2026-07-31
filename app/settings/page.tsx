@@ -17,6 +17,7 @@ type NotificationSettingsStatus = {
   resend_configured: boolean;
   from_email: string;
   lab_notifications_enabled: boolean;
+  appointment_notifications_enabled: boolean;
   updated_at: string | null;
 };
 
@@ -33,6 +34,7 @@ function SettingsPageContent() {
   const [resendKey, setResendKey] = useState('');
   const [fromEmail, setFromEmail] = useState('');
   const [labNotifEnabled, setLabNotifEnabled] = useState(true);
+  const [apptNotifEnabled, setApptNotifEnabled] = useState(true);
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
   const [notifSuccess, setNotifSuccess] = useState<string | null>(null);
@@ -58,6 +60,7 @@ function SettingsPageContent() {
     setNotif(data);
     setFromEmail(data?.from_email || '');
     setLabNotifEnabled(data?.lab_notifications_enabled ?? true);
+    setApptNotifEnabled(data?.appointment_notifications_enabled ?? true);
   };
 
   const handleSaveNotifications = async () => {
@@ -68,6 +71,7 @@ function SettingsPageContent() {
       const body: Record<string, unknown> = {
         from_email: fromEmail,
         lab_notifications_enabled: labNotifEnabled,
+        appointment_notifications_enabled: apptNotifEnabled,
       };
       if (resendKey.trim()) {
         body.resend_api_key = resendKey.trim();
@@ -227,7 +231,7 @@ function SettingsPageContent() {
                 <div>
                   <CardTitle className="text-base">Patient Notifications (Resend)</CardTitle>
                   <CardDescription className="text-xs">
-                    Email patients automatically when their lab case reaches the lab or is delivered back
+                    Email patients automatically about lab case progress and appointment changes
                   </CardDescription>
                 </div>
               </div>
@@ -286,6 +290,18 @@ function SettingsPageContent() {
                 />
                 <span className="text-sm text-slate-700">
                   Send patients an email when their lab case reaches a new stage (arrived at lab / delivered back)
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={apptNotifEnabled}
+                  onChange={(e) => setApptNotifEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-slate-700">
+                  Send patients an email when an appointment is booked, rescheduled or cancelled
                 </span>
               </label>
 

@@ -10,6 +10,7 @@ import {
 export const RESEND_API_KEY_SETTING = 'resend_api_key';
 export const RESEND_FROM_EMAIL_SETTING = 'resend_from_email';
 export const LAB_NOTIFICATIONS_ENABLED_SETTING = 'lab_notifications_enabled';
+export const APPOINTMENT_NOTIFICATIONS_ENABLED_SETTING = 'appointment_notifications_enabled';
 
 type SettingRow = {
   setting_key: string;
@@ -72,14 +73,23 @@ export async function areLabNotificationsEnabled() {
   return row.setting_value === 'true';
 }
 
+export async function areAppointmentNotificationsEnabled() {
+  const row = await readSetting(APPOINTMENT_NOTIFICATIONS_ENABLED_SETTING);
+  if (!row || row.setting_value == null) {
+    return true;
+  }
+  return row.setting_value === 'true';
+}
+
 export async function getNotificationSettingsStatus() {
-  const [apiKeyRow, fromRow, enabledRow] = await Promise.all([
+  const [apiKeyRow, fromRow, labEnabledRow, apptEnabledRow] = await Promise.all([
     readSetting(RESEND_API_KEY_SETTING),
     readSetting(RESEND_FROM_EMAIL_SETTING),
     readSetting(LAB_NOTIFICATIONS_ENABLED_SETTING),
+    readSetting(APPOINTMENT_NOTIFICATIONS_ENABLED_SETTING),
   ]);
 
-  const updatedTimestamps = [apiKeyRow?.updated_at, fromRow?.updated_at, enabledRow?.updated_at]
+  const updatedTimestamps = [apiKeyRow?.updated_at, fromRow?.updated_at, labEnabledRow?.updated_at, apptEnabledRow?.updated_at]
     .filter((value): value is string => Boolean(value))
     .sort()
     .reverse();
@@ -87,7 +97,8 @@ export async function getNotificationSettingsStatus() {
   return {
     resend_configured: Boolean(process.env.RESEND_API_KEY || apiKeyRow?.setting_value),
     from_email: process.env.RESEND_FROM_EMAIL || fromRow?.setting_value || '',
-    lab_notifications_enabled: enabledRow?.setting_value == null ? true : enabledRow.setting_value === 'true',
+    lab_notifications_enabled: labEnabledRow?.setting_value == null ? true : labEnabledRow.setting_value === 'true',
+    appointment_notifications_enabled: apptEnabledRow?.setting_value == null ? true : apptEnabledRow.setting_value === 'true',
     updated_at: updatedTimestamps[0] || null,
   };
 }
@@ -96,6 +107,7 @@ type SaveNotificationSettingsInput = {
   apiKey?: string | null;
   fromEmail?: string | null;
   labNotificationsEnabled?: boolean | null;
+  appointmentNotificationsEnabled?: boolean | null;
 };
 
 export async function saveNotificationSettings(input: SaveNotificationSettingsInput, updatedBy: string | null) {
@@ -138,6 +150,17 @@ export async function saveNotificationSettings(input: SaveNotificationSettingsIn
       setting_value: input.labNotificationsEnabled ? 'true' : 'false',
       setting_type: 'text',
       description: 'Whether patients are emailed when their lab case reaches a new stage',
+      updated_by: updatedBy,
+      updated_at: nowIso,
+    });
+  }
+
+  if (typeof input.appointmentNotificationsEnabled === 'boolean') {
+    rows.push({
+      setting_key: APPOINTMENT_NOTIFICATIONS_ENABLED_SETTING,
+      setting_value: input.appointmentNotificationsEnabled ? 'true' : 'false',
+      setting_type: 'text',
+      description: 'Whether patients are emailed when an appointment is booked, changed or cancelled',
       updated_by: updatedBy,
       updated_at: nowIso,
     });

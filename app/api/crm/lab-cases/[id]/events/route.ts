@@ -3,9 +3,11 @@ import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { writeAuditEntry } from '@/lib/audit/write-audit-entry';
 import {
   buildLabWorkflowSnapshot,
+  deriveLabWorkflowStage,
   LAB_WORKFLOW_EVENT_TYPE,
   resolveLabWorkflowUpdate,
 } from '@/lib/lab/lab-workflow';
+import { notifyPatientOfLabStage } from '@/lib/notifications/lab-notifications';
 import { supabaseServer } from '@/lib/supabase/server';
 
 const WORKFLOW_FIELDS = [
@@ -212,6 +214,25 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
         patch,
       },
     });
+
+    // Notify the patient when the case reaches a patient-relevant stage (e.g. arrived at lab).
+    // Only fire on an actual stage change, and never block or fail the workflow update.
+    const previousStage = deriveLabWorkflowStage(labCase);
+    const nextStage = finalCase?.workflow_stage || patch.workflow_stage;
+    if (nextStage && String(nextStage) !== previousStage) {
+      try {
+        await notifyPatientOfLabStage({
+          stage: String(nextStage),
+          patientId: finalCase?.patient_id || labCase.patient_id,
+          caseType: finalCase?.case_type || labCase.case_type,
+          labName: finalCase?.lab_name || labCase.lab_name,
+          labCaseId: id,
+          actorUserId: user.id,
+        });
+      } catch (notifyError) {
+        console.error('Lab stage notification failed:', notifyError);
+      }
+    }
 
     return NextResponse.json({
       data: {

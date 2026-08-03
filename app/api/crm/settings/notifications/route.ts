@@ -41,17 +41,26 @@ export async function PUT(request: NextRequest) {
     const fromEmail = typeof body.from_email === 'string' ? body.from_email : undefined;
     const labNotificationsEnabled =
       typeof body.lab_notifications_enabled === 'boolean' ? body.lab_notifications_enabled : undefined;
+    const appointmentNotificationsEnabled =
+      typeof body.appointment_notifications_enabled === 'boolean' ? body.appointment_notifications_enabled : undefined;
 
-    if (fromEmail !== undefined && fromEmail.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromEmail.trim())) {
+    // The from address may include a display name, e.g. "Crown Dental Studio <no-reply@x.co.za>".
+    const emailToValidate = fromEmail?.trim().match(/<([^>]+)>/)?.[1] || fromEmail?.trim();
+    if (fromEmail !== undefined && emailToValidate && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailToValidate)) {
       return NextResponse.json({ error: 'Enter a valid from email address' }, { status: 400 });
     }
 
-    if (apiKey === undefined && fromEmail === undefined && labNotificationsEnabled === undefined) {
+    if (
+      apiKey === undefined &&
+      fromEmail === undefined &&
+      labNotificationsEnabled === undefined &&
+      appointmentNotificationsEnabled === undefined
+    ) {
       return NextResponse.json({ error: 'No settings provided' }, { status: 400 });
     }
 
     const data = await saveNotificationSettings(
-      { apiKey, fromEmail, labNotificationsEnabled },
+      { apiKey, fromEmail, labNotificationsEnabled, appointmentNotificationsEnabled },
       user.id,
     );
 
@@ -64,6 +73,7 @@ export async function PUT(request: NextRequest) {
         resend_key_changed: Boolean(apiKey && apiKey.trim()),
         from_email_changed: fromEmail !== undefined,
         lab_notifications_enabled: data.lab_notifications_enabled,
+        appointment_notifications_enabled: data.appointment_notifications_enabled,
       },
     });
 

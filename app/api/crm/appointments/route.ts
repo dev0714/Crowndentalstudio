@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { writeAuditEntry } from '@/lib/audit/write-audit-entry';
+import { notifyPatientOfAppointment } from '@/lib/notifications/appointment-notifications';
 import { supabaseServer } from '@/lib/supabase/server';
 import type { Appointment, CreateAppointmentRequest } from '@/lib/types/crm';
 
@@ -135,6 +136,26 @@ export async function POST(request: NextRequest) {
       entityId: data?.[0]?.id,
       metadata: { fields: Object.keys(body) },
     });
+
+    // Email the patient a booking confirmation (best-effort; never blocks the response).
+    const created = data?.[0];
+    if (created?.id) {
+      try {
+        await notifyPatientOfAppointment({
+          kind: 'booked',
+          appointmentId: created.id,
+          patientId: created.patient_id,
+          appointmentDate: created.appointment_date,
+          appointmentType: created.appointment_type,
+          durationMinutes: created.duration_minutes,
+          roomNumber: created.room_number,
+          actorUserId: user.id,
+        });
+      } catch (notifyError) {
+        console.error('Appointment booking notification failed:', notifyError);
+      }
+    }
+
     return NextResponse.json({ data: data[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating appointment:', error);
@@ -166,6 +187,13 @@ export async function PUT(request: NextRequest) {
         : {}),
     };
 
+    // Load the previous state so we can tell if this edit reschedules or cancels the appointment.
+    const { data: previous } = await supabaseServer
+      .from('appointments')
+      .select('appointment_date, status')
+      .eq('id', appointmentId)
+      .maybeSingle();
+
     const { data, error } = await supabaseServer
       .from('appointments')
       .update({ ...sanitizedBody, updated_at: new Date().toISOString() })
@@ -183,6 +211,36 @@ export async function PUT(request: NextRequest) {
       entityId: appointmentId,
       metadata: { fields: Object.keys(body) },
     });
+
+    // Notify the patient when an edit meaningfully changes their appointment.
+    const updated = data?.[0];
+    if (updated?.id) {
+      const wasCancelled = previous?.status !== 'Cancelled' && updated.status === 'Cancelled';
+      const timeChanged =
+        !wasCancelled &&
+        previous?.appointment_date &&
+        updated.appointment_date &&
+        new Date(previous.appointment_date).getTime() !== new Date(updated.appointment_date).getTime();
+
+      const kind = wasCancelled ? 'cancelled' : timeChanged ? 'rescheduled' : null;
+      if (kind) {
+        try {
+          await notifyPatientOfAppointment({
+            kind,
+            appointmentId: updated.id,
+            patientId: updated.patient_id,
+            appointmentDate: updated.appointment_date,
+            appointmentType: updated.appointment_type,
+            durationMinutes: updated.duration_minutes,
+            roomNumber: updated.room_number,
+            actorUserId: user.id,
+          });
+        } catch (notifyError) {
+          console.error('Appointment update notification failed:', notifyError);
+        }
+      }
+    }
+
     return NextResponse.json({ data: data[0] });
   } catch (error) {
     console.error('Error updating appointment:', error);

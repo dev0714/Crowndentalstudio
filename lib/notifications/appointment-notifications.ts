@@ -1,20 +1,23 @@
 import 'server-only';
 
 import { supabaseServer } from '@/lib/supabase/server';
-import { areLabNotificationsEnabled } from '@/lib/settings/notifications';
+import { areAppointmentNotificationsEnabled } from '@/lib/settings/notifications';
 import { sendResendEmail } from '@/lib/notifications/resend';
 import {
-  buildLabStageNotification,
-  labStageMessageToHtml,
-  labStageMessageToText,
-} from '@/lib/notifications/lab-stage-message';
+  appointmentMessageToHtml,
+  appointmentMessageToText,
+  buildAppointmentNotification,
+  type AppointmentNotificationKind,
+} from '@/lib/notifications/appointment-message';
 
 type NotifyInput = {
-  stage: string;
+  kind: AppointmentNotificationKind;
+  appointmentId: string;
   patientId: string | null | undefined;
-  caseType?: string | null;
-  labName?: string | null;
-  labCaseId: string;
+  appointmentDate?: string | null;
+  appointmentType?: string | null;
+  durationMinutes?: number | null;
+  roomNumber?: string | null;
   actorUserId: string | null;
 };
 
@@ -46,7 +49,7 @@ async function logAutomationEvent(row: {
         title: row.title,
         message: row.message,
         source_system: 'crm',
-        source_kind: 'lab_case_stage',
+        source_kind: 'appointment',
         source_id: row.source_id,
         external_id: row.external_id,
         occurred_at: new Date().toISOString(),
@@ -57,33 +60,27 @@ async function logAutomationEvent(row: {
       },
     ]);
   } catch (error) {
-    // Never let logging failures affect the workflow update.
-    console.error('Failed to log lab notification automation event:', error);
+    console.error('Failed to log appointment notification automation event:', error);
   }
 }
 
-// Sends a patient email when a lab case reaches a patient-relevant stage.
-// Always resolves — notification failures must never break the workflow update.
-export async function notifyPatientOfLabStage(input: NotifyInput): Promise<NotifyResult> {
-  const message = buildLabStageNotification(input.stage, { caseType: input.caseType, labName: input.labName });
-  if (!message) {
-    return { attempted: false, sent: false, reason: 'Stage does not notify patients' };
-  }
-
+// Emails a patient when their appointment is booked, rescheduled or cancelled.
+// Always resolves — notification failures must never break the appointment write.
+export async function notifyPatientOfAppointment(input: NotifyInput): Promise<NotifyResult> {
   let enabled = false;
   try {
-    enabled = await areLabNotificationsEnabled();
+    enabled = await areAppointmentNotificationsEnabled();
   } catch (error) {
-    console.error('Failed to read lab notification settings:', error);
+    console.error('Failed to read appointment notification settings:', error);
     return { attempted: false, sent: false, reason: 'Could not read notification settings' };
   }
 
   if (!enabled) {
-    return { attempted: false, sent: false, reason: 'Lab notifications are disabled' };
+    return { attempted: false, sent: false, reason: 'Appointment notifications are disabled' };
   }
 
   if (!input.patientId) {
-    return { attempted: false, sent: false, reason: 'Lab case has no linked patient' };
+    return { attempted: false, sent: false, reason: 'Appointment has no linked patient' };
   }
 
   const { data: patient, error } = await supabaseServer
@@ -93,54 +90,53 @@ export async function notifyPatientOfLabStage(input: NotifyInput): Promise<Notif
     .maybeSingle<{ first_name: string | null; last_name: string | null; email: string | null }>();
 
   if (error) {
-    console.error('Failed to load patient for lab notification:', error);
+    console.error('Failed to load patient for appointment notification:', error);
     return { attempted: false, sent: false, reason: 'Could not load patient' };
   }
 
   const patientName = `${patient?.first_name || ''} ${patient?.last_name || ''}`.trim() || 'Patient';
   const email = patient?.email?.trim();
 
-  // Rebuild the message with the patient's name now that we have it.
-  const personalized = buildLabStageNotification(input.stage, {
+  const message = buildAppointmentNotification(input.kind, {
     patientName,
-    caseType: input.caseType,
-    labName: input.labName,
+    appointmentDate: input.appointmentDate,
+    appointmentType: input.appointmentType,
+    durationMinutes: input.durationMinutes,
+    roomNumber: input.roomNumber,
   });
-  const finalMessage = personalized || message;
 
   if (!email) {
-    // Log a visible failure so the feed explains why no email went out.
     await logAutomationEvent({
       patient_id: input.patientId,
       patient_name: patientName,
       status: 'failed',
-      title: finalMessage.subject,
+      title: message.subject,
       message: 'Not sent: patient has no email address on file',
-      source_id: input.labCaseId,
+      source_id: input.appointmentId,
       external_id: null,
       created_by: input.actorUserId,
-      metadata: { stage: input.stage, channel: 'email', reason: 'no_email' },
+      metadata: { kind: input.kind, channel: 'email', reason: 'no_email' },
     });
     return { attempted: false, sent: false, reason: 'Patient has no email address' };
   }
 
   const result = await sendResendEmail({
     to: email,
-    subject: finalMessage.subject,
-    html: labStageMessageToHtml(finalMessage),
-    text: labStageMessageToText(finalMessage),
+    subject: message.subject,
+    html: appointmentMessageToHtml(message),
+    text: appointmentMessageToText(message),
   });
 
   await logAutomationEvent({
     patient_id: input.patientId,
     patient_name: patientName,
     status: result.ok ? 'sent' : 'failed',
-    title: finalMessage.subject,
-    message: result.ok ? labStageMessageToText(finalMessage) : `Failed to send: ${result.error}`,
-    source_id: input.labCaseId,
+    title: message.subject,
+    message: result.ok ? appointmentMessageToText(message) : `Failed to send: ${result.error}`,
+    source_id: input.appointmentId,
     external_id: result.ok && result.id ? `resend:${result.id}` : null,
     created_by: input.actorUserId,
-    metadata: { stage: input.stage, channel: 'email', to: email },
+    metadata: { kind: input.kind, channel: 'email', to: email },
   });
 
   return result.ok

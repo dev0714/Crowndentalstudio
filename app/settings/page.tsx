@@ -17,6 +17,7 @@ type NotificationSettingsStatus = {
   resend_configured: boolean;
   from_email: string;
   lab_notifications_enabled: boolean;
+  appointment_notifications_enabled: boolean;
   updated_at: string | null;
 };
 
@@ -33,9 +34,13 @@ function SettingsPageContent() {
   const [resendKey, setResendKey] = useState('');
   const [fromEmail, setFromEmail] = useState('');
   const [labNotifEnabled, setLabNotifEnabled] = useState(true);
+  const [apptNotifEnabled, setApptNotifEnabled] = useState(true);
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
   const [notifSuccess, setNotifSuccess] = useState<string | null>(null);
+  const [testEmail, setTestEmail] = useState('');
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     fetchSettings().catch((err) => {
@@ -58,6 +63,33 @@ function SettingsPageContent() {
     setNotif(data);
     setFromEmail(data?.from_email || '');
     setLabNotifEnabled(data?.lab_notifications_enabled ?? true);
+    setApptNotifEnabled(data?.appointment_notifications_enabled ?? true);
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmail.trim()) {
+      setTestResult({ ok: false, message: 'Enter an email address to send the test to' });
+      return;
+    }
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const response = await fetch('/api/crm/settings/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ to: testEmail.trim() }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to send test email');
+      }
+      setTestResult({ ok: true, message: `Test email sent to ${testEmail.trim()}. Check the inbox (and spam).` });
+    } catch (err) {
+      setTestResult({ ok: false, message: err instanceof Error ? err.message : 'Failed to send test email' });
+    } finally {
+      setTestSending(false);
+    }
   };
 
   const handleSaveNotifications = async () => {
@@ -68,6 +100,7 @@ function SettingsPageContent() {
       const body: Record<string, unknown> = {
         from_email: fromEmail,
         lab_notifications_enabled: labNotifEnabled,
+        appointment_notifications_enabled: apptNotifEnabled,
       };
       if (resendKey.trim()) {
         body.resend_api_key = resendKey.trim();
@@ -227,7 +260,7 @@ function SettingsPageContent() {
                 <div>
                   <CardTitle className="text-base">Patient Notifications (Resend)</CardTitle>
                   <CardDescription className="text-xs">
-                    Email patients automatically when their lab case reaches the lab or is delivered back
+                    Email patients automatically about lab case progress and appointment changes
                   </CardDescription>
                 </div>
               </div>
@@ -289,6 +322,18 @@ function SettingsPageContent() {
                 </span>
               </label>
 
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={apptNotifEnabled}
+                  onChange={(e) => setApptNotifEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-slate-700">
+                  Send patients an email when an appointment is booked, rescheduled or cancelled
+                </span>
+              </label>
+
               <div className="flex flex-wrap items-center gap-3">
                 <Button onClick={handleSaveNotifications} disabled={notifSaving} className="bg-cyan-600 hover:bg-cyan-700 text-white">
                   <Save className="w-4 h-4 mr-2" />
@@ -298,6 +343,37 @@ function SettingsPageContent() {
 
               {notifSuccess && <p className="text-sm text-emerald-700">{notifSuccess}</p>}
               {notifError && <p className="text-sm text-red-600">{notifError}</p>}
+
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Send a test email</p>
+                  <p className="text-xs text-slate-500">
+                    Verify your Resend key and sending domain by emailing any address. Save your settings first.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="rounded-xl border-slate-200 flex-1"
+                  />
+                  <Button
+                    onClick={handleSendTestEmail}
+                    disabled={testSending}
+                    variant="outline"
+                    className="border-slate-300"
+                  >
+                    {testSending ? 'Sending…' : 'Send Test Email'}
+                  </Button>
+                </div>
+                {testResult && (
+                  <p className={`text-sm ${testResult.ok ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {testResult.message}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
 

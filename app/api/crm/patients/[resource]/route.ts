@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { supabaseServer } from '@/lib/supabase/server';
+import { deliverPatientMessage } from '@/lib/notifications/patient-message';
 import { generatePatientDocument, type PatientDocumentType } from '@/lib/documents/patient-document-generator';
 import {
   normalizeClaimStatus,
@@ -858,7 +859,20 @@ async function createResource(resource: string, table: string, body: Record<stri
       sender_name: body.sender_name || null,
     };
     const { data, error } = await supabaseServer.from(table).insert([payload]).select();
-    return { data: data?.[0], error };
+    if (error) {
+      return { data: data?.[0], error };
+    }
+
+    // Actually send the message when the channel supports it (email via Resend).
+    // Recording always succeeds; delivery status is reported back to the caller.
+    const delivery = await deliverPatientMessage({
+      channel: String(payload.message_type || ''),
+      content: String(payload.message_content || ''),
+      patientId: String(payload.patient_id || ''),
+      actorUserId: userId,
+    });
+
+    return { data: { ...(data?.[0] || {}), delivery }, error: null };
   }
 
   if (resource === 'consents') {

@@ -109,6 +109,18 @@ export async function notifyPatientOfLabStage(input: NotifyInput): Promise<Notif
   const finalMessage = personalized || message;
 
   if (!email) {
+    // Log a visible failure so the feed explains why no email went out.
+    await logAutomationEvent({
+      patient_id: input.patientId,
+      patient_name: patientName,
+      status: 'failed',
+      title: finalMessage.subject,
+      message: 'Not sent: patient has no email address on file',
+      source_id: input.labCaseId,
+      external_id: null,
+      created_by: input.actorUserId,
+      metadata: { stage: input.stage, channel: 'email', reason: 'no_email' },
+    });
     return { attempted: false, sent: false, reason: 'Patient has no email address' };
   }
 

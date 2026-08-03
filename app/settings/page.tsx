@@ -38,6 +38,9 @@ function SettingsPageContent() {
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
   const [notifSuccess, setNotifSuccess] = useState<string | null>(null);
+  const [testEmail, setTestEmail] = useState('');
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     fetchSettings().catch((err) => {
@@ -61,6 +64,32 @@ function SettingsPageContent() {
     setFromEmail(data?.from_email || '');
     setLabNotifEnabled(data?.lab_notifications_enabled ?? true);
     setApptNotifEnabled(data?.appointment_notifications_enabled ?? true);
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmail.trim()) {
+      setTestResult({ ok: false, message: 'Enter an email address to send the test to' });
+      return;
+    }
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const response = await fetch('/api/crm/settings/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ to: testEmail.trim() }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to send test email');
+      }
+      setTestResult({ ok: true, message: `Test email sent to ${testEmail.trim()}. Check the inbox (and spam).` });
+    } catch (err) {
+      setTestResult({ ok: false, message: err instanceof Error ? err.message : 'Failed to send test email' });
+    } finally {
+      setTestSending(false);
+    }
   };
 
   const handleSaveNotifications = async () => {
@@ -314,6 +343,37 @@ function SettingsPageContent() {
 
               {notifSuccess && <p className="text-sm text-emerald-700">{notifSuccess}</p>}
               {notifError && <p className="text-sm text-red-600">{notifError}</p>}
+
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Send a test email</p>
+                  <p className="text-xs text-slate-500">
+                    Verify your Resend key and sending domain by emailing any address. Save your settings first.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="rounded-xl border-slate-200 flex-1"
+                  />
+                  <Button
+                    onClick={handleSendTestEmail}
+                    disabled={testSending}
+                    variant="outline"
+                    className="border-slate-300"
+                  >
+                    {testSending ? 'Sending…' : 'Send Test Email'}
+                  </Button>
+                </div>
+                {testResult && (
+                  <p className={`text-sm ${testResult.ok ? 'text-emerald-700' : 'text-red-600'}`}>
+                    {testResult.message}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
 

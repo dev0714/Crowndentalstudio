@@ -106,6 +106,17 @@ export async function notifyPatientOfAppointment(input: NotifyInput): Promise<No
   });
 
   if (!email) {
+    await logAutomationEvent({
+      patient_id: input.patientId,
+      patient_name: patientName,
+      status: 'failed',
+      title: message.subject,
+      message: 'Not sent: patient has no email address on file',
+      source_id: input.appointmentId,
+      external_id: null,
+      created_by: input.actorUserId,
+      metadata: { kind: input.kind, channel: 'email', reason: 'no_email' },
+    });
     return { attempted: false, sent: false, reason: 'Patient has no email address' };
   }
 

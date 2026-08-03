@@ -839,14 +839,25 @@ function PatientDetailContent() {
       return;
     }
     try {
-      await fetchJson('/api/crm/patients/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...messageFormData, patient_id: patientId, timestamp: new Date().toISOString() }),
-      });
+      const result = await fetchJson<{ delivery?: { channel: string; status: string; detail: string } }>(
+        '/api/crm/patients/messages',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...messageFormData, patient_id: patientId, timestamp: new Date().toISOString() }),
+        },
+      );
       await fetchPatientData();
       setMessageFormData({ message_type: '', content: '' });
-      alert('Message recorded');
+
+      const delivery = result?.delivery;
+      if (delivery?.status === 'sent') {
+        alert(`Message sent. ${delivery.detail}`);
+      } else if (delivery?.status === 'failed') {
+        alert(`Message recorded, but it could not be sent: ${delivery.detail}`);
+      } else {
+        alert(delivery?.detail || 'Message recorded');
+      }
     } catch (err) {
       console.error('[v0] Error:', err);
       alert('Failed to record message');
@@ -1731,8 +1742,14 @@ function PatientDetailContent() {
                     ))}
                   </select>
                   <textarea placeholder="Message Content" value={messageFormData.content} onChange={(e) => setMessageFormData({...messageFormData, content: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300" rows={3}></textarea>
+                  <p className="text-[11px] text-blue-800/80">
+                    {messageFormData.message_type === 'email'
+                      ? 'Email messages are sent to the patient’s email address via Resend.'
+                      : 'WhatsApp, SMS and social messages are recorded in the log only — no sending provider is connected for those channels yet. Choose Email to actually send.'}
+                  </p>
                   <Button onClick={addMessage} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md">
-                    <Plus className="w-4 h-4 mr-2" />Record Message
+                    <Plus className="w-4 h-4 mr-2" />
+                    {messageFormData.message_type === 'email' ? 'Send Email' : 'Record Message'}
                   </Button>
                 </div>
                 <div className="space-y-2">

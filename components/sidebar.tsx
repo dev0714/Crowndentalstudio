@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Calendar, TrendingUp,
   FlaskConical, CreditCard, Shield, Activity, RefreshCcw,
-  Zap, Package, UserCheck, Tag, Lock, LogOut, ChevronRight, FileText, Settings2,
+  Zap, Package, UserCheck, Tag, Lock, LogOut, ChevronRight, FileText, Settings2, Mail,
 } from 'lucide-react';
 import { logoutCurrentSession } from '@/lib/auth/session-client';
 import { usePortalSession } from '@/lib/auth/portal-session-context';
@@ -18,6 +18,7 @@ const NAV_GROUPS = [
       { label: 'Patients',      href: '/patients',      icon: Users },
       { label: 'Appointments',  href: '/appointments',  icon: Calendar },
       { label: 'Leads',         href: '/leads',         icon: TrendingUp },
+      { label: 'Emails',        href: '/emails',        icon: Mail },
     ],
   },
   {

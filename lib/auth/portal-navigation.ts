@@ -3,6 +3,7 @@ export const PORTAL_NAV_ITEMS = [
   { label: 'Patients', href: '/patients' },
   { label: 'Appointments', href: '/appointments' },
   { label: 'Leads', href: '/leads' },
+  { label: 'Emails', href: '/emails' },
   { label: 'Lab Tracker', href: '/lab' },
   { label: 'Accounts', href: '/accounts' },
   { label: 'Compliance', href: '/compliance' },

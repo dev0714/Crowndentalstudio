@@ -5,12 +5,22 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, KeyRound, Save, Bell } from 'lucide-react';
+import { Shield, KeyRound, Save, Bell, Mail } from 'lucide-react';
 
 type OpenAiKeyStatus = {
   configured: boolean;
   updated_at: string | null;
   updated_by: string | null;
+};
+
+type EmailInboxStatus = {
+  configured: boolean;
+  host: string;
+  port: number;
+  user: string;
+  tls: boolean;
+  mailbox: string;
+  updated_at: string | null;
 };
 
 type NotificationSettingsStatus = {
@@ -42,6 +52,18 @@ function SettingsPageContent() {
   const [testSending, setTestSending] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
+  // Incoming email (IMAP)
+  const [inbox, setInbox] = useState<EmailInboxStatus | null>(null);
+  const [imapHost, setImapHost] = useState('');
+  const [imapPort, setImapPort] = useState('993');
+  const [imapUser, setImapUser] = useState('');
+  const [imapPassword, setImapPassword] = useState('');
+  const [imapTls, setImapTls] = useState(true);
+  const [imapMailbox, setImapMailbox] = useState('INBOX');
+  const [inboxSaving, setInboxSaving] = useState(false);
+  const [inboxError, setInboxError] = useState<string | null>(null);
+  const [inboxSuccess, setInboxSuccess] = useState<string | null>(null);
+
   useEffect(() => {
     fetchSettings().catch((err) => {
       console.error('[v0] Failed to load settings', err);
@@ -51,7 +73,61 @@ function SettingsPageContent() {
       console.error('[v0] Failed to load notification settings', err);
       setNotifError('Failed to load notification settings');
     });
+    fetchInboxSettings().catch((err) => {
+      console.error('[v0] Failed to load email inbox settings', err);
+      setInboxError('Failed to load email inbox settings');
+    });
   }, []);
+
+  const fetchInboxSettings = async () => {
+    const response = await fetch('/api/crm/settings/email-inbox', { credentials: 'include' });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || 'Failed to load email inbox settings');
+    }
+    const data = payload.data as EmailInboxStatus;
+    setInbox(data);
+    setImapHost(data?.host || '');
+    setImapPort(String(data?.port || 993));
+    setImapUser(data?.user || '');
+    setImapTls(data?.tls ?? true);
+    setImapMailbox(data?.mailbox || 'INBOX');
+  };
+
+  const handleSaveInbox = async () => {
+    setInboxSaving(true);
+    setInboxError(null);
+    setInboxSuccess(null);
+    try {
+      const body: Record<string, unknown> = {
+        host: imapHost,
+        port: Number(imapPort) || 993,
+        user: imapUser,
+        tls: imapTls,
+        mailbox: imapMailbox,
+      };
+      if (imapPassword.trim()) {
+        body.password = imapPassword.trim();
+      }
+      const response = await fetch('/api/crm/settings/email-inbox', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to save email inbox settings');
+      }
+      setImapPassword('');
+      setInbox(payload.data as EmailInboxStatus);
+      setInboxSuccess('Email inbox settings saved.');
+    } catch (err) {
+      setInboxError(err instanceof Error ? err.message : 'Failed to save email inbox settings');
+    } finally {
+      setInboxSaving(false);
+    }
+  };
 
   const fetchNotificationSettings = async () => {
     const response = await fetch('/api/crm/settings/notifications', { credentials: 'include' });
@@ -374,6 +450,81 @@ function SettingsPageContent() {
                   </p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Incoming Email (IMAP)</CardTitle>
+                  <CardDescription className="text-xs">
+                    Connect the practice mailbox so the Emails tab can pull the last 48 hours of messages
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
+                Pulling email uses <strong>IMAP</strong> (SMTP only sends). Enter your mail host, e.g.
+                <code className="mx-1 rounded bg-white/70 px-1">imap.gmail.com</code> on port 993, the full mailbox
+                address as the username, and an app password. The password is stored encrypted and never shown again.
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Status</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {inbox == null ? 'Loading…' : inbox.configured ? 'Configured' : 'Not configured'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">Last Updated</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {inbox?.updated_at ? new Date(inbox.updated_at).toLocaleString() : '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">IMAP Host</label>
+                  <Input value={imapHost} onChange={(e) => setImapHost(e.target.value)} placeholder="imap.yourprovider.com" className="rounded-xl border-slate-200" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Port</label>
+                  <Input value={imapPort} onChange={(e) => setImapPort(e.target.value)} placeholder="993" className="rounded-xl border-slate-200" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Username (email)</label>
+                  <Input value={imapUser} onChange={(e) => setImapUser(e.target.value)} placeholder="info@crowndentalstudio.co.za" className="rounded-xl border-slate-200" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Password / App password</label>
+                  <Input type="password" value={imapPassword} onChange={(e) => setImapPassword(e.target.value)} placeholder={inbox?.configured ? 'Leave blank to keep current' : '••••••••'} className="rounded-xl border-slate-200" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Mailbox</label>
+                  <Input value={imapMailbox} onChange={(e) => setImapMailbox(e.target.value)} placeholder="INBOX" className="rounded-xl border-slate-200" />
+                </div>
+                <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 cursor-pointer self-end">
+                  <input type="checkbox" checked={imapTls} onChange={(e) => setImapTls(e.target.checked)} className="w-4 h-4" />
+                  <span className="text-sm text-slate-700">Use TLS (recommended, port 993)</span>
+                </label>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={handleSaveInbox} disabled={inboxSaving} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                  <Save className="w-4 h-4 mr-2" />
+                  {inboxSaving ? 'Saving…' : 'Save Email Settings'}
+                </Button>
+              </div>
+
+              {inboxSuccess && <p className="text-sm text-emerald-700">{inboxSuccess}</p>}
+              {inboxError && <p className="text-sm text-red-600">{inboxError}</p>}
             </CardContent>
           </Card>
 

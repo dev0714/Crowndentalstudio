@@ -63,6 +63,8 @@ function SettingsPageContent() {
   const [inboxSaving, setInboxSaving] = useState(false);
   const [inboxError, setInboxError] = useState<string | null>(null);
   const [inboxSuccess, setInboxSuccess] = useState<string | null>(null);
+  const [inboxTesting, setInboxTesting] = useState(false);
+  const [inboxTestResult, setInboxTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     fetchSettings().catch((err) => {
@@ -126,6 +128,32 @@ function SettingsPageContent() {
       setInboxError(err instanceof Error ? err.message : 'Failed to save email inbox settings');
     } finally {
       setInboxSaving(false);
+    }
+  };
+
+  const handleTestInbox = async () => {
+    setInboxTesting(true);
+    setInboxTestResult(null);
+    try {
+      const response = await fetch('/api/crm/settings/email-inbox/test', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || 'Connection test failed');
+      }
+      const count = payload.data?.message_count;
+      setInboxTestResult({
+        ok: true,
+        message: `Connected to ${payload.data?.host} — mailbox "${payload.data?.mailbox}" reachable${
+          typeof count === 'number' ? ` (${count} messages)` : ''
+        }.`,
+      });
+    } catch (err) {
+      setInboxTestResult({ ok: false, message: err instanceof Error ? err.message : 'Connection test failed' });
+    } finally {
+      setInboxTesting(false);
     }
   };
 
@@ -521,10 +549,26 @@ function SettingsPageContent() {
                   <Save className="w-4 h-4 mr-2" />
                   {inboxSaving ? 'Saving…' : 'Save Email Settings'}
                 </Button>
+                <Button
+                  onClick={handleTestInbox}
+                  disabled={inboxTesting || !inbox?.configured}
+                  variant="outline"
+                  className="border-indigo-200 text-indigo-700"
+                >
+                  {inboxTesting ? 'Testing…' : 'Test Connection'}
+                </Button>
               </div>
+              {!inbox?.configured && (
+                <p className="text-xs text-slate-400">Save your settings before testing the connection.</p>
+              )}
 
               {inboxSuccess && <p className="text-sm text-emerald-700">{inboxSuccess}</p>}
               {inboxError && <p className="text-sm text-red-600">{inboxError}</p>}
+              {inboxTestResult && (
+                <p className={`text-sm ${inboxTestResult.ok ? 'text-emerald-700' : 'text-red-600'}`}>
+                  {inboxTestResult.message}
+                </p>
+              )}
             </CardContent>
           </Card>
 

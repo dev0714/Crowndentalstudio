@@ -197,6 +197,21 @@ function parseFetchResponse(response: string): FetchedEmail[] {
   return emails;
 }
 
+// Verifies the configured mailbox can be reached: connect, login, select.
+// Returns the number of messages the server reports in the mailbox.
+export async function testImapConnection(config: ImapConfig): Promise<{ messageCount: number }> {
+  const session = await ImapSession.connect(config);
+  try {
+    await session.run(`LOGIN ${quote(config.user)} ${quote(config.password)}`);
+    const selectResponse = await session.run(`SELECT ${quote(config.mailbox)}`);
+    const existsLine = selectResponse.split('\r\n').find((line) => /^\* \d+ EXISTS/.test(line));
+    const messageCount = existsLine ? Number(existsLine.replace(/[^\d]/g, '')) : 0;
+    return { messageCount: Number.isFinite(messageCount) ? messageCount : 0 };
+  } finally {
+    session.close();
+  }
+}
+
 // Pulls emails received since `sinceDate` from the configured mailbox.
 export async function fetchRecentEmails(
   config: ImapConfig,

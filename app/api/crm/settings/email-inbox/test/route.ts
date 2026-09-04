@@ -33,7 +33,17 @@ export async function POST() {
     try {
       result = await testImapConnection(config);
     } catch (imapError) {
-      const message = imapError instanceof Error ? imapError.message : 'Could not connect to the mail server';
+      let message = imapError instanceof Error ? imapError.message : 'Could not connect to the mail server';
+      // Auth failures on Gmail/Workspace almost always mean a normal password was
+      // used instead of an app password — point the user at the fix.
+      if (/AUTHENTICATIONFAILED|Invalid credentials|LOGIN failed|AUTHENTICATE failed/i.test(message)) {
+        if (/gmail|google/i.test(config.host)) {
+          message +=
+            ' — Gmail needs a 16-character App Password (Google Account → Security → 2-Step Verification → App passwords), with IMAP enabled in Gmail settings. Your normal password will not work.';
+        } else {
+          message += ' — check the username and password/app password for the mailbox.';
+        }
+      }
       await writeAuditEntry({
         actor: user,
         action: 'settings.email_inbox.test',

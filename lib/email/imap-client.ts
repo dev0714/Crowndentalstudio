@@ -127,9 +127,11 @@ class ImapSession {
         response += chunk;
         if (ImapSession.isComplete(response, tag)) {
           cleanup();
-          const status = new RegExp(`^${tag} (OK|NO|BAD)`, 'm').exec(response);
+          const status = new RegExp(`^${tag} (OK|NO|BAD)(.*)$`, 'm').exec(response);
           if (status && status[1] !== 'OK') {
-            reject(new Error(`IMAP ${status[1]} for ${command.split(' ')[0]}`));
+            const detail = (status[2] || '').trim();
+            const command0 = command.split(' ')[0];
+            reject(new Error(detail ? `${command0} failed: ${detail}` : `${command0} failed (IMAP ${status[1]})`));
             return;
           }
           resolve(response);

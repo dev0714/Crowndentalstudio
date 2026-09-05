@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface User {
   id: string;
@@ -27,6 +28,7 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 function RolesContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('CEO');
   const [error, setError] = useState<string | null>(null);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserName, setNewUserName] = useState('');
@@ -131,11 +133,31 @@ function RolesContent() {
           <p className="text-slate-500 text-sm mt-0.5">Manage user roles and permissions</p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="h-auto flex-wrap justify-start bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+            {Object.entries(usersByRole).map(([role, roleUsers]) => (
+              <TabsTrigger key={role} value={role} className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+                {role}
+                <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : roleUsers.length}</span>
+              </TabsTrigger>
+            ))}
+            <TabsTrigger value="add" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add user
+            </TabsTrigger>
+          </TabsList>
+
+        <TabsContent value="add">
         {/* Create New User */}
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-            <CardTitle className="text-base">Create Test User</CardTitle>
-            <CardDescription className="text-xs">Add a new user with a specific role for testing</CardDescription>
+            <CardTitle className="text-base">Create User</CardTitle>
+            <CardDescription className="text-xs">Add a staff member and assign their role</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -181,87 +203,83 @@ function RolesContent() {
             </div>
           </CardContent>
         </Card>
+        </TabsContent>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-slate-600">Loading users...</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(usersByRole).map(([role, roleUsers]) => (
-              <Card key={role} className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-navy-800 flex items-center justify-center shadow-sm">
-                      <Shield className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{role}</CardTitle>
-                      <CardDescription className="text-xs">{ROLE_DESCRIPTIONS[role]}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {roleUsers.length === 0 ? (
-                    <p className="text-slate-500 py-4">No users with this role yet</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[720px]">
-                        <thead className="border-b-2 border-slate-200">
-                          <tr>
-                            <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>
-                            <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Email</th>
-                            <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Phone</th>
-                            <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
-                            <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {roleUsers.map((user) => (
-                            <tr
-                              key={user.id}
-                              className="border-b border-slate-100 hover:bg-cream/40 transition-colors"
+        {Object.entries(usersByRole).map(([role, roleUsers]) => (
+          <TabsContent key={role} value={role}>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-slate-600">Loading users...</p>
+              </div>
+            ) : (
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-navy-800 flex items-center justify-center shadow-sm">
+                  <Shield className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">{role}</CardTitle>
+                  <CardDescription className="text-xs">{ROLE_DESCRIPTIONS[role]}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {roleUsers.length === 0 ? (
+                <p className="text-slate-500 py-4">No users with this role yet</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px]">
+                    <thead className="border-b-2 border-slate-200">
+                      <tr>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Email</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Phone</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {roleUsers.map((user) => (
+                        <tr
+                          key={user.id}
+                          className="border-b border-slate-100 hover:bg-cream/40 transition-colors"
+                        >
+                          <td className="py-3 px-4 font-medium text-slate-900">{user.full_name}</td>
+                          <td className="py-3 px-4 text-slate-600">{user.email}</td>
+                          <td className="py-3 px-4 text-slate-600">{user.phone || '-'}</td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`text-xs font-semibold px-2 py-1 rounded ${
+                                user.is_active
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
                             >
-                              <td className="py-3 px-4 font-medium text-slate-900">{user.full_name}</td>
-                              <td className="py-3 px-4 text-slate-600">{user.email}</td>
-                              <td className="py-3 px-4 text-slate-600">{user.phone || '-'}</td>
-                              <td className="py-3 px-4">
-                                <span
-                                  className={`text-xs font-semibold px-2 py-1 rounded ${
-                                    user.is_active
-                                      ? 'bg-green-100 text-green-700'
-                                      : 'bg-red-100 text-red-700'
-                                  }`}
-                                >
-                                  {user.is_active ? 'Active' : 'Inactive'}
-                                </span>
-                              </td>
-                              <td className="py-3 px-4">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleDeleteUser(user.id)}
-                                >
-                                  Delete
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                              {user.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+            )}
+          </TabsContent>
+        ))}
+        </Tabs>
       </div>
     </div>
   );

@@ -1,54 +1,74 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useInView } from './motion';
 
 interface CounterStatProps {
   number: string;
   label: string;
+  className?: string;
+  numberClassName?: string;
+  labelClassName?: string;
+  duration?: number;
 }
 
-export function CounterStat({ number, label }: CounterStatProps) {
-  const [displayNumber, setDisplayNumber] = useState(0);
-  const hasAnimated = useRef(false);
+function easeOutExpo(p: number) {
+  return p >= 1 ? 1 : 1 - Math.pow(2, -10 * p);
+}
+
+/** Parses "2,400+" → { value: 2400, decimals: 0, suffix: '+' } and "5.0" → { value: 5, decimals: 1, suffix: '' }. */
+export function parseCounter(input: string) {
+  const suffix = input.replace(/[\d.,\s]/g, '');
+  const numeric = input.replace(/[^\d.]/g, '');
+  const value = Number.parseFloat(numeric);
+  const decimals = numeric.includes('.') ? numeric.split('.')[1].length : 0;
+  return { value: Number.isFinite(value) ? value : 0, decimals, suffix };
+}
+
+export function formatCounter(value: number, decimals: number) {
+  // en-US grouping matches the site's own "2,400+" copy (en-ZA would render "2 400" / "5,0").
+  return value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+export function CounterStat({
+  number,
+  label,
+  className = 'text-center',
+  numberClassName = 'text-4xl md:text-5xl font-black text-white mb-1',
+  labelClassName = 'text-sm text-cyan-200 font-medium',
+  duration = 1800,
+}: CounterStatProps) {
+  const { ref, inView } = useInView<HTMLDivElement>(0.5);
+  const [display, setDisplay] = useState(0);
+  const started = useRef(false);
+  const { value, decimals, suffix } = parseCounter(number);
 
   useEffect(() => {
-    if (hasAnimated.current) return;
+    if (!inView || started.current) return;
+    started.current = true;
 
-    // Extract the numeric part from the string (e.g., "2,400+" -> 2400)
-    const numericValue = parseInt(number.replace(/[^0-9]/g, ''), 10);
-    
-    if (isNaN(numericValue)) return;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(value);
+      return;
+    }
 
-    hasAnimated.current = true;
-    const duration = 2000; // 2 seconds animation
-    const startTime = Date.now();
-    const increment = numericValue / (duration / 16); // Assuming 60fps
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const current = Math.floor(progress * numericValue);
-      
-      setDisplayNumber(current);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      setDisplay(value * easeOutExpo(p));
+      if (p < 1) raf = requestAnimationFrame(tick);
     };
-
-    requestAnimationFrame(animate);
-  }, [number]);
-
-  // Format the number with commas
-  const formattedDisplay = displayNumber.toLocaleString();
-  const suffix = number.includes('+') ? '+' : '';
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [inView, value, duration]);
 
   return (
-    <div className="text-center">
-      <div className="text-4xl md:text-5xl font-black text-white mb-1">
-        {formattedDisplay}{suffix}
+    <div ref={ref} className={className}>
+      <div className={numberClassName}>
+        {formatCounter(display, decimals)}{suffix}
       </div>
-      <p className="text-sm text-cyan-200 font-medium">{label}</p>
+      <p className={labelClassName}>{label}</p>
     </div>
   );
 }

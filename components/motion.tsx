@@ -1,6 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react'
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
 
 interface AnimatedProps {
   children: ReactNode
@@ -9,15 +19,22 @@ interface AnimatedProps {
   style?: CSSProperties
 }
 
-function useInView(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null)
+const EASE = 'cubic-bezier(0.22,1,0.36,1)'
+
+/** Flips to true once the element scrolls into view (once). Reduced-motion users see content immediately. */
+export function useInView<T extends HTMLElement = HTMLDivElement>(threshold = 0.15) {
+  const ref = useRef<T>(null)
   const [inView, setInView] = useState(false)
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setInView(true)
+      return
+    }
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect() } },
-      { threshold }
+      { threshold, rootMargin: '0px 0px -8% 0px' }
     )
     obs.observe(el)
     return () => obs.disconnect()
@@ -25,96 +42,72 @@ function useInView(threshold = 0.15) {
   return { ref, inView }
 }
 
+function transition(delay: number, duration = 0.7) {
+  return `opacity ${duration}s ${EASE} ${delay}s, transform ${duration}s ${EASE} ${delay}s`
+}
+
 export function FadeInUp({ children, className, delay = 0, style }: AnimatedProps) {
   const { ref, inView } = useInView()
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(60px)',
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-        ...style,
-      }}
-    >
+    <div ref={ref} className={className} style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(40px)', transition: transition(delay), ...style }}>
       {children}
     </div>
   )
 }
 
-export function FadeInLeft({ children, className, delay = 0 }: AnimatedProps) {
+export function FadeInLeft({ children, className, delay = 0, style }: AnimatedProps) {
   const { ref, inView } = useInView()
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateX(0)' : 'translateX(-60px)',
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-      }}
-    >
+    <div ref={ref} className={className} style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateX(0)' : 'translateX(-40px)', transition: transition(delay), ...style }}>
       {children}
     </div>
   )
 }
 
-export function FadeInRight({ children, className, delay = 0 }: AnimatedProps) {
+export function FadeInRight({ children, className, delay = 0, style }: AnimatedProps) {
   const { ref, inView } = useInView()
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateX(0)' : 'translateX(60px)',
-        transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-      }}
-    >
+    <div ref={ref} className={className} style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateX(0)' : 'translateX(40px)', transition: transition(delay), ...style }}>
       {children}
     </div>
   )
 }
 
-export function ScaleIn({ children, className, delay = 0 }: AnimatedProps) {
+export function ScaleIn({ children, className, delay = 0, style }: AnimatedProps) {
   const { ref, inView } = useInView()
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'scale(1)' : 'scale(0.85)',
-        transition: `opacity 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-      }}
-    >
+    <div ref={ref} className={className} style={{ opacity: inView ? 1 : 0, transform: inView ? 'scale(1)' : 'scale(0.94)', transition: transition(delay, 0.6), ...style }}>
       {children}
     </div>
   )
 }
 
-export function StaggerContainer({ children, className }: AnimatedProps) {
-  return <div className={className}>{children}</div>
+/**
+ * Real stagger: each direct child (typically a StaggerItem) receives an ascending `delay`
+ * unless it sets its own, so grids arrive left-to-right instead of all at once.
+ */
+export function StaggerContainer({ children, className, step = 0.09 }: AnimatedProps & { step?: number }) {
+  return (
+    <div className={className}>
+      {Children.map(children, (child, i) => {
+        if (!isValidElement(child)) return child
+        const el = child as ReactElement<{ delay?: number }>
+        return el.props.delay == null ? cloneElement(el, { delay: i * step }) : el
+      })}
+    </div>
+  )
 }
 
-export function StaggerItem({ children, className, delay = 0 }: AnimatedProps) {
+export function StaggerItem({ children, className, delay = 0, style }: AnimatedProps) {
   const { ref, inView } = useInView()
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: inView ? 1 : 0,
-        transform: inView ? 'translateY(0)' : 'translateY(50px)',
-        transition: `opacity 0.65s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.65s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
-      }}
-    >
+    <div ref={ref} className={className} style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(28px)', transition: transition(delay, 0.65), ...style }}>
       {children}
     </div>
   )
 }
 
+/** Mount-time entrance used by hero copy. */
 export function HeroText({ children, className, delay = 0 }: AnimatedProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
@@ -122,42 +115,66 @@ export function HeroText({ children, className, delay = 0 }: AnimatedProps) {
     return () => clearTimeout(t)
   }, [delay])
   return (
-    <div
-      className={className}
-      style={{
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(80px)',
-        transition: `opacity 0.9s cubic-bezier(0.22,1,0.36,1), transform 0.9s cubic-bezier(0.22,1,0.36,1)`,
-      }}
-    >
+    <div className={className} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(40px)', transition: `opacity 0.9s ${EASE}, transform 0.9s ${EASE}` }}>
       {children}
     </div>
   )
 }
 
+/**
+ * Cinematic headline: each line rises from behind an invisible mask, 130ms apart.
+ * Pure CSS (`.reveal-mask` / `.reveal-line` in globals.css), so it plays before hydration.
+ */
+export function RevealLines({
+  lines,
+  as: Tag = 'h1',
+  className,
+  delay = 0,
+}: {
+  lines: ReactNode[]
+  as?: 'h1' | 'h2' | 'h3' | 'p' | 'div'
+  className?: string
+  delay?: number
+}) {
+  return (
+    <Tag className={className} style={{ ['--d' as string]: `${delay}ms` } as CSSProperties}>
+      {lines.map((line, i) => (
+        <span key={i} className="reveal-mask">
+          <span className="reveal-line" style={{ ['--i' as string]: i } as CSSProperties}>{line}</span>
+        </span>
+      ))}
+    </Tag>
+  )
+}
+
+/** Slow filmic zoom-and-drift on a full-bleed photo. Wrap a positioned container holding a `fill` Image. */
+export function KenBurns({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={`ken-burns ${className ?? ''}`}>{children}</div>
+}
+
+/** Scroll-scrubbed depth: the child drifts slightly slower than the page (static where unsupported). */
+export function Parallax({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={`parallax ${className ?? ''}`}>{children}</div>
+}
+
+/** Mount-time fade used for supporting hero copy; `delay` in ms. */
+export function FadeUp({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  return (
+    <div className={`fade-up ${className ?? ''}`} style={{ ['--d' as string]: `${delay}ms` } as CSSProperties}>
+      {children}
+    </div>
+  )
+}
+
+// Retained for the About/Services/Contact/Blog pages until they are restyled.
 export function FloatingBlob({ className }: { className?: string }) {
-  return <div className={`${className} animate-blob`} />
+  return <div className={className} />
 }
 
 export function FloatingBlobAlt({ className }: { className?: string }) {
-  return <div className={`${className} animate-blob-alt`} />
+  return <div className={className} />
 }
 
-// Floating card wrapper with CSS animation
-export function FloatCard({ children, className, animDelay = 0 }: { children: ReactNode; className?: string; animDelay?: number }) {
-  return (
-    <div
-      className={className}
-      style={{ animation: `floatCard 5s ease-in-out ${animDelay}s infinite` }}
-    >
-      {children}
-    </div>
-  )
-}
-
-// Re-export a lightweight motion-like div for simple cases
-export const motion = {
-  div: ({ children, className, style, animate, transition, initial, ...rest }: any) => (
-    <div className={className} style={style} {...rest}>{children}</div>
-  ),
+export function FloatCard({ children, className }: { children: ReactNode; className?: string; animDelay?: number }) {
+  return <div className={className}>{children}</div>
 }

@@ -6,6 +6,8 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDateSA } from '@/lib/sa-formatting';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 
 type RecallKind = 'routine-recall' | 'treatment-review' | 'procedure-review' | 'lab-follow-up';
 
@@ -32,7 +34,28 @@ type RecallQueue = {
     procedures: number;
     lab: number;
     overdue: number;
+    booked?: number;
   };
+};
+
+const KIND_LABEL: Record<RecallKind, string> = {
+  'routine-recall': 'Routine recall',
+  'treatment-review': 'Treatment review',
+  'procedure-review': 'Procedure review',
+  'lab-follow-up': 'Lab follow-up',
+};
+
+const KIND_CHIP: Record<RecallKind, string> = {
+  'routine-recall': 'bg-navy-800 text-white',
+  'treatment-review': 'bg-teal text-white',
+  'procedure-review': 'bg-[#b8742e] text-white',
+  'lab-follow-up': 'bg-[#3f4c7a] text-white',
+};
+
+const PRIORITY_CHIP: Record<'high' | 'medium' | 'low', string> = {
+  high: 'bg-red-50 text-red-700 border-red-200',
+  medium: 'bg-amber-50 text-amber-700 border-amber-200',
+  low: 'bg-slate-50 text-slate-600 border-slate-200',
 };
 
 function RecallsContent() {
@@ -40,6 +63,9 @@ function RecallsContent() {
   const [loading, setLoading] = useState(true);
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [kindFilter, setKindFilter] = useState<RecallKind | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const loadQueue = async () => {
     const response = await fetch('/api/crm/recalls', { credentials: 'include' });
@@ -95,7 +121,26 @@ function RecallsContent() {
     }
   };
 
-  const items = queue?.items || [];
+  const allItems = queue?.items || [];
+  const items = kindFilter === 'all' ? allItems : allItems.filter((item) => item.kind === kindFilter);
+  const { pageCount } = describeRange(page, pageSize, items.length);
+  const currentPage = Math.min(page, pageCount);
+  const visibleItems = sliceForPage<RecallQueueItem>(items, currentPage, pageSize);
+  const changeKind = (kind: RecallKind | 'all') => {
+    setKindFilter(kind);
+    setPage(1);
+  };
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+  };
+  const kindCounts: Array<{ kind: RecallKind | 'all'; label: string; count: number }> = [
+    { kind: 'all', label: 'All', count: allItems.length },
+    { kind: 'routine-recall', label: KIND_LABEL['routine-recall'], count: queue?.summary.routine ?? 0 },
+    { kind: 'treatment-review', label: KIND_LABEL['treatment-review'], count: queue?.summary.treatment ?? 0 },
+    { kind: 'procedure-review', label: KIND_LABEL['procedure-review'], count: queue?.summary.procedures ?? 0 },
+    { kind: 'lab-follow-up', label: KIND_LABEL['lab-follow-up'], count: queue?.summary.lab ?? 0 },
+  ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -122,8 +167,8 @@ function RecallsContent() {
             { label: 'Routine Recalls', value: queue?.summary.routine ?? 0, gradient: 'from-[#3f4c7a] to-[#2c365c]' },
             { label: 'Treatment Reviews', value: queue?.summary.treatment ?? 0, gradient: 'from-teal to-[#0b6f71]' },
             { label: 'Procedure Reviews', value: queue?.summary.procedures ?? 0, gradient: 'from-[#b8742e] to-[#8f5a22]' },
-            { label: 'Lab Follow-ups', value: queue?.summary.lab ?? 0, gradient: 'from-cyan-600 to-blue-500' },
-            { label: 'Overdue', value: queue?.summary.overdue ?? 0, gradient: 'from-rose-600 to-pink-500' },
+            { label: 'Lab Follow-ups', value: queue?.summary.lab ?? 0, gradient: 'from-[#5b6b7f] to-[#3b4653]' },
+            { label: 'Overdue', value: queue?.summary.overdue ?? 0, gradient: 'from-[#9f2f2f] to-[#6f1d1d]' },
           ].map((stat) => (
             <div key={stat.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${stat.gradient} p-5 text-white shadow-md`}>
               <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : stat.value}</p>
@@ -135,62 +180,89 @@ function RecallsContent() {
 
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-            <CardTitle className="text-base">Recall Queue</CardTitle>
-            <CardDescription className="text-xs">{loading ? 'Loading...' : `${items.length} items ready to action`}</CardDescription>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-base">Recall Queue</CardTitle>
+                <CardDescription className="text-xs">
+                  {loading
+                    ? 'Loading...'
+                    : `${allItems.length} ready to action${queue?.summary.booked ? ` · ${queue.summary.booked} already booked in` : ''}`}
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {kindCounts.map((entry) => (
+                  <button
+                    key={entry.kind}
+                    type="button"
+                    onClick={() => changeKind(entry.kind)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                      kindFilter === entry.kind ? 'bg-ink text-white border-ink' : 'bg-white text-slate-600 border-slate-200 hover:border-teal/40'
+                    }`}
+                  >
+                    {entry.label} ({entry.count})
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p className="text-slate-600 py-8 text-center">Loading recall queue...</p>
-            ) : items.length > 0 ? (
+            ) : visibleItems.length > 0 ? (
               <div className="space-y-3">
-                {items.map((item) => (
+                {visibleItems.map((item) => (
                   <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-teal/30 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap gap-2 items-center mb-2">
-                          <span className="text-xs font-semibold px-2 py-1 rounded-full bg-blue-600 text-white">
-                            {item.kind.replace('-', ' ')}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap gap-1.5 items-center mb-2">
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${KIND_CHIP[item.kind]}`}>
+                            {KIND_LABEL[item.kind]}
                           </span>
-                          <span
-                            className={`text-xs font-semibold px-2 py-1 rounded ${
-                              item.priority === 'high'
-                                ? 'bg-red-100 text-red-700'
-                                : item.priority === 'medium'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-blue-100 text-ink'
-                            }`}
-                          >
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${PRIORITY_CHIP[item.priority]}`}>
                             {item.priority} priority
                           </span>
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${item.days_overdue > 0 ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            {item.days_overdue > 0 ? `${item.days_overdue}d overdue` : 'Due now'}
+                          </span>
                         </div>
-                        <p className="font-semibold text-slate-900">
-                          <Link href={`/patients/${item.patient_id}`} className="hover:underline">
+                        <p className="font-semibold text-ink">
+                          <Link href={`/patients/${item.patient_id}`} className="hover:text-teal hover:underline">
                             {item.patient_name}
                           </Link>
                         </p>
                         <p className="text-sm text-slate-600 mt-1">{item.reason}</p>
-                        <p className="text-sm text-slate-500 mt-2">
-                          Last activity: {formatDateSA(item.last_activity_date)} | Due: {formatDateSA(item.due_date)}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {item.source_label} | {item.days_overdue > 0 ? `${item.days_overdue} days overdue` : 'Due now'}
+                        <p className="text-xs text-slate-500 mt-2">
+                          {item.source_label}
+                          {item.last_activity_date ? ` · last activity ${formatDateSA(item.last_activity_date)}` : ''}
+                          {item.due_date ? ` · due ${formatDateSA(item.due_date)}` : ''}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Button
-                          onClick={() => scheduleRecall(item)}
-                          className="bg-navy-800 hover:bg-ink border-0 shadow-sm text-xs"
-                          disabled={schedulingId === item.id}
-                        >
-                          {schedulingId === item.id ? 'Scheduling...' : 'Schedule Follow-up'}
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={() => scheduleRecall(item)}
+                        className="bg-navy-800 hover:bg-ink border-0 shadow-sm text-xs w-full sm:w-auto"
+                        disabled={schedulingId === item.id}
+                      >
+                        {schedulingId === item.id ? 'Scheduling...' : 'Schedule Follow-up'}
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-600 py-8 text-center">No recalls or treatment reviews are currently due</p>
+              <p className="text-slate-600 py-8 text-center">
+                {kindFilter === 'all' ? 'No recalls or reviews are currently due' : `No ${KIND_LABEL[kindFilter as RecallKind].toLowerCase()} items are due`}
+              </p>
+            )}
+            {!loading && (
+              <PaginationFooter
+                page={currentPage}
+                pageSize={pageSize}
+                count={items.length}
+                onPageChange={setPage}
+                onPageSizeChange={changePageSize}
+                noun="items"
+                className="-mx-6 -mb-6 mt-4"
+              />
             )}
           </CardContent>
         </Card>

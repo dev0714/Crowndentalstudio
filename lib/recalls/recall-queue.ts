@@ -70,6 +70,8 @@ export type RecallQueue = {
     procedures: number;
     lab: number;
     overdue: number;
+    /** Patients skipped because they already have an upcoming appointment. */
+    booked: number;
   };
 };
 
@@ -108,6 +110,18 @@ function daysBetween(from: string | null | undefined, toIso: string) {
   return Math.floor((toTimeValue - fromTime) / DAY_MS);
 }
 
+// Appointments in these states never count as a visit or a booking.
+const INACTIVE_APPOINTMENT_STATUSES = new Set(['cancelled', 'canceled', 'no show', 'no-show', 'no_show']);
+
+function isActiveAppointment(appointment: RecallAppointment) {
+  return !INACTIVE_APPOINTMENT_STATUSES.has((appointment.status || '').trim().toLowerCase());
+}
+
+function addDays(value: string | null | undefined, days: number) {
+  const timestamp = toTime(value);
+  return timestamp == null ? '' : new Date(timestamp + days * DAY_MS).toISOString();
+}
+
 function priorityForDays(daysOverdue: number): RecallPriority {
   if (daysOverdue >= 180) {
     return 'high';
@@ -129,37 +143,54 @@ export function buildRecallQueue(
   nowIso = new Date().toISOString(),
 ): RecallQueue {
   const items: RecallQueueItem[] = [];
-  const latestCompletedAppointments = new Map<string, RecallAppointment>();
+  const nowTime = toTime(nowIso) ?? Date.now();
 
-  appointments
-    .filter((appointment) => appointment.status === 'Completed')
-    .forEach((appointment) => {
-      const current = latestCompletedAppointments.get(appointment.patient_id);
-      if (!current || new Date(appointment.appointment_date) > new Date(current.appointment_date)) {
-        latestCompletedAppointments.set(appointment.patient_id, appointment);
-      }
-    });
+  // Latest past visit per patient (any appointment that was not cancelled), and who is already booked in.
+  const lastVisits = new Map<string, RecallAppointment>();
+  const bookedPatientIds = new Set<string>();
+
+  appointments.filter(isActiveAppointment).forEach((appointment) => {
+    const time = toTime(appointment.appointment_date);
+    if (time == null) return;
+    if (time >= nowTime) {
+      bookedPatientIds.add(appointment.patient_id);
+      return;
+    }
+    const current = lastVisits.get(appointment.patient_id);
+    if (!current || time > (toTime(current.appointment_date) ?? 0)) {
+      lastVisits.set(appointment.patient_id, appointment);
+    }
+  });
+
+  const bookedPatients = new Set<string>();
+  const skipIfBooked = (patientId: string) => {
+    if (!bookedPatientIds.has(patientId)) return false;
+    bookedPatients.add(patientId);
+    return true;
+  };
 
   patients.forEach((patient) => {
-    const completedAppointment = latestCompletedAppointments.get(patient.id);
-    const referenceDate = completedAppointment?.appointment_date || patient.created_at;
-    const daysOverdue = daysBetween(referenceDate, nowIso);
+    if (skipIfBooked(patient.id)) return;
+    const lastVisit = lastVisits.get(patient.id);
+    const referenceDate = lastVisit?.appointment_date || patient.created_at;
+    const daysSince = daysBetween(referenceDate, nowIso);
 
-    if (daysOverdue != null && daysOverdue >= ROUTINE_RECALL_DAYS) {
+    if (daysSince != null && daysSince >= ROUTINE_RECALL_DAYS) {
+      const wasCompleted = (lastVisit?.status || '').toLowerCase() === 'completed';
       items.push({
         id: `routine:${patient.id}`,
         kind: 'routine-recall',
         patient_id: patient.id,
         patient_name: patientName(patient),
-        source_id: completedAppointment?.id || patient.id,
-        source_label: completedAppointment ? 'Completed appointment' : 'Patient record',
-        due_date: toDateString(referenceDate),
+        source_id: lastVisit?.id || patient.id,
+        source_label: lastVisit ? (wasCompleted ? 'Completed appointment' : 'Last appointment') : 'Patient record',
+        due_date: addDays(referenceDate, ROUTINE_RECALL_DAYS),
         last_activity_date: toDateString(referenceDate),
-        days_overdue: daysOverdue - ROUTINE_RECALL_DAYS,
-        priority: priorityForDays(daysOverdue - ROUTINE_RECALL_DAYS),
-        reason: completedAppointment
-          ? `Routine recall due after last completed appointment`
-          : `Routine recall due from patient creation date`,
+        days_overdue: daysSince - ROUTINE_RECALL_DAYS,
+        priority: priorityForDays(daysSince - ROUTINE_RECALL_DAYS),
+        reason: lastVisit
+          ? `Six-month routine recall since last visit`
+          : `Six-month routine recall; no appointment on record since the patient was added`,
       });
     }
   });
@@ -172,7 +203,7 @@ export function buildRecallQueue(
 
       if (daysOverdue != null && daysOverdue >= TREATMENT_REVIEW_DAYS) {
         const patient = patients.find((entry) => entry.id === plan.patient_id);
-        if (!patient) return;
+        if (!patient || skipIfBooked(plan.patient_id)) return;
 
         items.push({
           id: `treatment:${plan.id}`,
@@ -181,7 +212,7 @@ export function buildRecallQueue(
           patient_name: patientName(patient),
           source_id: plan.id,
           source_label: plan.plan_name,
-          due_date: toDateString(referenceDate),
+          due_date: addDays(referenceDate, TREATMENT_REVIEW_DAYS),
           last_activity_date: toDateString(referenceDate),
           days_overdue: daysOverdue - TREATMENT_REVIEW_DAYS,
           priority: priorityForDays(daysOverdue - TREATMENT_REVIEW_DAYS),
@@ -198,7 +229,7 @@ export function buildRecallQueue(
 
       if (daysOverdue != null && daysOverdue >= PROCEDURE_REVIEW_DAYS) {
         const patient = patients.find((entry) => entry.id === procedure.patient_id);
-        if (!patient) return;
+        if (!patient || skipIfBooked(procedure.patient_id)) return;
 
         items.push({
           id: `procedure:${procedure.id}`,
@@ -207,7 +238,7 @@ export function buildRecallQueue(
           patient_name: patientName(patient),
           source_id: procedure.id,
           source_label: procedure.procedure_name,
-          due_date: toDateString(referenceDate),
+          due_date: addDays(referenceDate, PROCEDURE_REVIEW_DAYS),
           last_activity_date: toDateString(referenceDate),
           days_overdue: daysOverdue - PROCEDURE_REVIEW_DAYS,
           priority: priorityForDays(daysOverdue - PROCEDURE_REVIEW_DAYS),
@@ -227,7 +258,7 @@ export function buildRecallQueue(
     const hasOpenRecall = Boolean(labCase.patient_collected_at && !labCase.satisfaction_signed_at && !labCase.closed_at);
     const hasComeback = Boolean(labCase.comeback_requested_at && !labCase.closed_at);
 
-    if (!hasOpenRecall && !hasComeback) {
+    if ((!hasOpenRecall && !hasComeback) || skipIfBooked(labCase.patient_id)) {
       return;
     }
 
@@ -242,7 +273,7 @@ export function buildRecallQueue(
       patient_name: patientName(patient),
       source_id: labCase.id,
       source_label: labCase.comeback_requested_at ? 'Comeback requested' : 'Patient collected',
-      due_date: toDateString(referenceDate),
+      due_date: labCase.comeback_requested_at ? toDateString(referenceDate) : addDays(referenceDate, LAB_RECALL_DAYS),
       last_activity_date: toDateString(referenceDate),
       days_overdue: Math.max(0, daysOverdue),
       priority: daysOverdue > 0 ? 'high' : 'medium',
@@ -272,6 +303,7 @@ export function buildRecallQueue(
       procedures: uniqueItems.filter((item) => item.kind === 'procedure-review').length,
       lab: uniqueItems.filter((item) => item.kind === 'lab-follow-up').length,
       overdue: uniqueItems.filter((item) => item.days_overdue > 0).length,
+      booked: bookedPatients.size,
     },
   };
 }

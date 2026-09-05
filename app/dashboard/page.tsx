@@ -12,15 +12,15 @@ const STAT_CONFIG = [
     value: '245',
     sub: '+12 this month',
     icon: Users,
-    gradient: 'from-blue-600 to-cyan-500',
-    badge: 'bg-blue-500/20 text-blue-100',
+    gradient: 'from-navy-800 to-ink',
+    badge: 'bg-teal/20 text-blue-100',
   },
   {
     title: 'Appointments Today',
     value: '8',
     sub: '2 pending confirmation',
     icon: Calendar,
-    gradient: 'from-violet-600 to-purple-500',
+    gradient: 'from-[#3f4c7a] to-[#2c365c]',
     badge: 'bg-violet-500/20 text-violet-100',
   },
   {
@@ -28,7 +28,7 @@ const STAT_CONFIG = [
     value: formatZAR(5240),
     sub: 'Medical aid pending',
     icon: CreditCard,
-    gradient: 'from-amber-500 to-orange-500',
+    gradient: 'from-[#b8742e] to-[#8f5a22]',
     badge: 'bg-amber-500/20 text-amber-100',
   },
   {
@@ -36,7 +36,7 @@ const STAT_CONFIG = [
     value: '12',
     sub: 'Ready in ~3 days',
     icon: FlaskConical,
-    gradient: 'from-emerald-600 to-teal-500',
+    gradient: 'from-teal to-[#0b6f71]',
     badge: 'bg-emerald-500/20 text-emerald-100',
   },
 ];
@@ -158,7 +158,7 @@ function DashboardContent() {
             <div className="px-5 py-4 space-y-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Role</p>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-soft text-ink text-xs font-bold border border-hairline">
                   {user.role}
                 </span>
               </div>
@@ -180,7 +180,7 @@ function DashboardContent() {
 
           {/* Quick links */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-cyan-500">
+            <div className="px-5 py-4 border-b border-slate-100 bg-ink">
               <p className="font-bold text-sm text-white">Quick Actions</p>
               <p className="text-white/75 text-xs mt-1">Jump to common tasks</p>
             </div>
@@ -194,10 +194,10 @@ function DashboardContent() {
                 <a
                   key={href}
                   href={href}
-                  className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-slate-50 hover:bg-blue-50 transition-colors text-sm font-semibold text-slate-800 border border-slate-200 hover:border-blue-200"
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-xl bg-slate-50 hover:bg-cream transition-colors text-sm font-semibold text-slate-800 border border-slate-200 hover:border-teal/30"
                 >
                   {label}
-                  <ArrowUpRight className="w-3.5 h-3.5 text-blue-600" />
+                  <ArrowUpRight className="w-3.5 h-3.5 text-teal" />
                 </a>
               ))}
             </div>

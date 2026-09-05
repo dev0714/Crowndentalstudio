@@ -171,10 +171,10 @@ function OperationsPageContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Patients', value: loading ? '-' : String(summary?.totalPatients ?? 0), note: `Active ${summary?.activePatients ?? 0}`, gradient: 'from-blue-600 to-cyan-500' },
-            { label: 'Open Work', value: loading ? '-' : String((summary?.openLabCases || 0) + (summary?.openLeads || 0)), note: 'Leads + lab cases', gradient: 'from-violet-600 to-purple-500' },
+            { label: 'Total Patients', value: loading ? '-' : String(summary?.totalPatients ?? 0), note: `Active ${summary?.activePatients ?? 0}`, gradient: 'from-navy-800 to-ink' },
+            { label: 'Open Work', value: loading ? '-' : String((summary?.openLabCases || 0) + (summary?.openLeads || 0)), note: 'Leads + lab cases', gradient: 'from-[#3f4c7a] to-[#2c365c]' },
             { label: 'Outstanding Balance', value: loading ? '-' : formatZAR(summary?.outstandingBalance || 0), note: 'Accounts exposure', gradient: 'from-rose-600 to-pink-500' },
-            { label: 'Risk Signals', value: loading ? '-' : String(risks.length), note: 'Actionable exceptions', gradient: 'from-amber-500 to-orange-500' },
+            { label: 'Risk Signals', value: loading ? '-' : String(risks.length), note: 'Actionable exceptions', gradient: 'from-[#b8742e] to-[#8f5a22]' },
           ].map((card) => (
             <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
               <p className="text-3xl font-bold leading-none mb-1">{card.value}</p>
@@ -187,7 +187,7 @@ function OperationsPageContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {rolePanels.map((panel, i) => {
-            const gradients = ['from-emerald-600 to-teal-500','from-cyan-600 to-blue-500','from-slate-600 to-slate-800'];
+            const gradients = ['from-teal to-[#0b6f71]','from-cyan-600 to-blue-500','from-[#4b5563] to-[#1f2937]'];
             return (
               <div key={panel.title} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 3]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : panel.value}</p>
@@ -212,7 +212,7 @@ function OperationsPageContent() {
                     key={key}
                     variant={activeRegister === key ? 'default' : 'outline'}
                     size="sm"
-                    className={activeRegister === key ? 'bg-gradient-to-r from-blue-600 to-cyan-600 border-0 text-white text-xs' : 'text-xs'}
+                    className={activeRegister === key ? 'bg-navy-800 border-0 text-white text-xs' : 'text-xs'}
                     onClick={() => {
                       setActiveRegister(key as keyof OperationsPayload['registers']);
                       setStatusFilter('all');
@@ -229,7 +229,7 @@ function OperationsPageContent() {
             <div className="flex flex-col md:flex-row gap-3">
               <Input placeholder="Search register" value={search} onChange={(e) => setSearch(e.target.value)} />
               <Input placeholder="Status filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
-              <Button onClick={exportActiveRows} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md text-xs">
+              <Button onClick={exportActiveRows} className="bg-navy-800 hover:bg-ink border-0 shadow-md text-xs">
                 Export CSV
               </Button>
             </div>
@@ -247,7 +247,7 @@ function OperationsPageContent() {
                 <tbody>
                   {filteredRows.length > 0 ? (
                     filteredRows.map((row) => (
-                      <tr key={row.id} className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors">
+                      <tr key={row.id} className="border-b border-slate-100 hover:bg-cream/40 transition-colors">
                         <td className="py-3 px-4 text-slate-900 font-medium">{row.label}</td>
                         <td className="py-3 px-4 text-slate-600">{row.patient_name || row.patient_id || '-'}</td>
                         <td className="py-3 px-4 text-slate-600">{row.status || '-'}</td>

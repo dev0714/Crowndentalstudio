@@ -242,7 +242,7 @@ function AppointmentsContent() {
   const statusColor = (status: string) => {
     switch (status) {
       case APPOINTMENT_STATUS.SCHEDULED:
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-ink';
       case APPOINTMENT_STATUS.CONFIRMED:
         return 'bg-green-100 text-green-700';
       case APPOINTMENT_STATUS.CANCELLED:
@@ -262,7 +262,7 @@ function AppointmentsContent() {
           </div>
           <Button
             onClick={() => setIsBookingOpen(true)}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md border-0"
+            className="bg-navy-800 hover:bg-ink text-white shadow-md border-0"
           >
             + Book Appointment
           </Button>
@@ -377,7 +377,7 @@ function AppointmentsContent() {
               <Button
                 onClick={handleSaveAppointment}
                 disabled={isSaving}
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                className="bg-navy-800 hover:bg-ink text-white"
               >
                 {isSaving
                   ? 'Saving…'
@@ -445,7 +445,7 @@ function AppointmentsContent() {
               {selectedAppointment && (
                 <Button
                   onClick={() => openEditAppointment(selectedAppointment)}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                  className="bg-navy-800 hover:bg-ink text-white"
                 >
                   Edit
                 </Button>

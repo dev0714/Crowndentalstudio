@@ -5,10 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, Calendar, TrendingUp,
   FlaskConical, CreditCard, Shield, Activity, RefreshCcw,
-  Zap, Package, UserCheck, Tag, Lock, LogOut, ChevronRight, FileText, Settings2, Mail,
+  Zap, Package, UserCheck, Tag, Lock, LogOut, FileText, Settings2, Mail,
 } from 'lucide-react';
 import { logoutCurrentSession } from '@/lib/auth/session-client';
 import { usePortalSession } from '@/lib/auth/portal-session-context';
+import { Logo } from './logo';
 
 const NAV_GROUPS = [
   {
@@ -61,43 +62,40 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 flex-shrink-0 flex flex-col bg-gradient-to-b from-slate-950 via-[#0f1e3d] to-slate-950 min-h-screen shadow-xl">
+    <aside className="w-60 flex-shrink-0 flex flex-col bg-ink text-white min-h-screen border-r border-white/10">
 
       {/* Brand */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
-          <span className="text-white font-black text-sm">C</span>
+      <Link href="/dashboard" className="flex items-center gap-3 px-5 py-5 border-b border-white/10 text-white hover:text-white">
+        <Logo variant="icon" className="h-8 w-auto brightness-0 invert" />
+        <div className="leading-none">
+          <p className="font-display text-[19px] font-medium">Crown Dental Studio</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-white/40 mt-1.5">Practice portal</p>
         </div>
-        <div>
-          <p className="text-white font-bold text-sm leading-none">Crown Dental</p>
-          <p className="text-white/40 text-[10px] mt-0.5">Studio CRM</p>
-        </div>
-      </div>
+      </Link>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
-            <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-white/25">
+            <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
               {group.label}
             </p>
             <div className="space-y-0.5">
               {group.items.map(({ label, href, icon: Icon }) => {
                 const active = pathname === href || pathname.startsWith(`${href}/`);
                 return (
-                  <Link key={href} href={href}>
-                    <div
-                      className={[
-                        'flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer',
-                        active
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/20'
-                          : 'text-white/55 hover:text-white/90 hover:bg-white/[0.07]',
-                      ].join(' ')}
-                    >
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-cyan-400' : ''}`} />
-                      <span className="flex-1 truncate">{label}</span>
-                      {active && <ChevronRight className="w-3 h-3 text-cyan-400/60 flex-shrink-0" />}
-                    </div>
+                  <Link
+                    key={href}
+                    href={href}
+                    className={[
+                      'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors border-l-2',
+                      active
+                        ? 'bg-white/[0.08] text-white border-teal-light'
+                        : 'text-white/60 hover:text-white hover:bg-white/[0.05] border-transparent',
+                    ].join(' ')}
+                  >
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-teal-light' : ''}`} />
+                    <span className="flex-1 truncate">{label}</span>
                   </Link>
                 );
               })}
@@ -107,24 +105,24 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-white/10 space-y-2">
+      <div className="p-3 border-t border-white/10 space-y-1">
         {currentUser && (
-          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/[0.06]">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-[11px]">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-md bg-white/[0.06]">
+            <div className="w-7 h-7 rounded-full bg-teal flex items-center justify-center flex-shrink-0 text-white font-semibold text-[11px]">
               {initials(currentUser.full_name)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-[12px] font-semibold truncate">{currentUser.full_name}</p>
-              <p className="text-white/40 text-[10px] truncate">{currentUser.email}</p>
+              <p className="text-white/45 text-[10px] truncate">{currentUser.email}</p>
             </div>
           </div>
         )}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-[13px] font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-md text-[13px] font-medium text-white/45 hover:text-white hover:bg-white/[0.05] transition-colors"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          Sign Out
+          Sign out
         </button>
       </div>
     </aside>

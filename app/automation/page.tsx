@@ -163,7 +163,7 @@ function AutomationContent() {
             <h1 className="text-2xl font-bold text-slate-900">Automation Inbox</h1>
             <p className="text-slate-500 text-sm mt-0.5">Daily follow-up work pulled from recalls, appointments, and compliance gaps</p>
           </div>
-          <Button asChild className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md text-xs">
+          <Button asChild className="bg-navy-800 hover:bg-ink border-0 shadow-md text-xs">
             <Link href="/patients">Open Patients</Link>
           </Button>
         </div>
@@ -176,7 +176,7 @@ function AutomationContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {priorityCards.map((card, i) => {
-            const gradients = ['from-blue-600 to-cyan-500','from-rose-600 to-pink-500','from-amber-500 to-orange-500','from-emerald-600 to-teal-500'];
+            const gradients = ['from-navy-800 to-ink','from-rose-600 to-pink-500','from-[#b8742e] to-[#8f5a22]','from-teal to-[#0b6f71]'];
             return (
               <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 4]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -189,7 +189,7 @@ function AutomationContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categoryCards.map((card, i) => {
-            const gradients = ['from-violet-600 to-purple-500','from-cyan-600 to-blue-500','from-teal-600 to-emerald-500','from-slate-600 to-slate-800'];
+            const gradients = ['from-[#3f4c7a] to-[#2c365c]','from-cyan-600 to-blue-500','from-teal-600 to-emerald-500','from-[#4b5563] to-[#1f2937]'];
             return (
               <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 4]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -226,7 +226,7 @@ function AutomationContent() {
                 {items.map((item) => {
                   const isActive = activeItemId === item.id;
                   return (
-                    <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-blue-200 transition-colors">
+                    <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-teal/30 transition-colors">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -239,7 +239,7 @@ function AutomationContent() {
                                   ? 'bg-red-100 text-red-700'
                                   : item.priority === 'medium'
                                     ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-blue-100 text-blue-700'
+                                    : 'bg-blue-100 text-ink'
                               }`}
                             >
                               {item.priority} priority
@@ -261,7 +261,7 @@ function AutomationContent() {
                         <div className="flex flex-col items-start gap-2 lg:items-end">
                           <Button
                             onClick={() => openForm(item)}
-                            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-sm text-xs"
+                            className="bg-navy-800 hover:bg-ink border-0 shadow-sm text-xs"
                             disabled={submittingId === item.id}
                           >
                             Log outreach
@@ -310,7 +310,7 @@ function AutomationContent() {
                           <div className="mt-4 flex flex-wrap gap-2">
                             <Button
                               onClick={() => submitOutreach(item)}
-                              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-sm"
+                              className="bg-navy-800 hover:bg-ink border-0 shadow-sm"
                               disabled={submittingId === item.id}
                             >
                               {submittingId === item.id ? 'Saving...' : 'Save outreach'}

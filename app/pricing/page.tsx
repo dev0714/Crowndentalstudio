@@ -64,7 +64,7 @@ function PricingContent() {
               </div>
               <Button
                 type="button"
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md"
+                className="bg-navy-800 hover:bg-ink border-0 shadow-md"
                 onClick={() => void fetchQuote(datetime)}
               >
                 Calculate Quote
@@ -75,9 +75,9 @@ function PricingContent() {
 
             <div className="grid gap-4 md:grid-cols-3">
               {[
-                { label: 'Fee', value: loading ? '-' : formatZAR(quote?.amount || 0), gradient: 'from-blue-600 to-cyan-500' },
-                { label: 'Rule', value: loading ? '-' : (quote?.rule || 'No quote'), gradient: 'from-violet-600 to-purple-500' },
-                { label: 'Payment Check', value: loading ? '-' : (quote?.requiresPaymentMethodConfirmation ? 'Required' : 'Not required'), gradient: 'from-emerald-600 to-teal-500' },
+                { label: 'Fee', value: loading ? '-' : formatZAR(quote?.amount || 0), gradient: 'from-navy-800 to-ink' },
+                { label: 'Rule', value: loading ? '-' : (quote?.rule || 'No quote'), gradient: 'from-[#3f4c7a] to-[#2c365c]' },
+                { label: 'Payment Check', value: loading ? '-' : (quote?.requiresPaymentMethodConfirmation ? 'Required' : 'Not required'), gradient: 'from-teal to-[#0b6f71]' },
               ].map((card) => (
                 <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
                   <p className="text-2xl font-bold leading-none mb-1">{card.value}</p>

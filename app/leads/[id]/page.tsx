@@ -130,7 +130,7 @@ function LeadDetailContent() {
   const statusColor = (status: string) => {
     switch (status) {
       case LEAD_STATUS.NEW:
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-ink';
       case LEAD_STATUS.CONTACTED:
         return 'bg-amber-100 text-amber-700';
       case LEAD_STATUS.QUALIFIED:

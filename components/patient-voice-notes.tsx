@@ -232,7 +232,7 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
 
           <div className="flex flex-wrap gap-2">
             {!isRecording ? (
-              <Button type="button" onClick={startRecording} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button type="button" onClick={startRecording} className="bg-navy-800 hover:bg-ink text-white">
                 <Mic className="w-4 h-4 mr-2" />
                 Record
               </Button>
@@ -255,7 +255,7 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
           </div>
 
           {selectedFile && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+            <div className="rounded-xl border border-hairline bg-teal-soft p-3 text-sm text-blue-800">
               Ready: <span className="font-semibold">{selectedFile.name}</span>
             </div>
           )}
@@ -301,7 +301,7 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
                       <p className="text-xs text-slate-500">{formatDateSA(note.created_at)}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-soft text-ink border border-hairline">
                         {note.status}
                       </span>
                       {transcriptionStatus === 'failed' && (
@@ -324,7 +324,7 @@ export function PatientVoiceNotes({ patientId, patientName }: PatientVoiceNotesP
                         href={audioUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex text-sm font-medium text-blue-700 hover:text-blue-800"
+                        className="inline-flex text-sm font-medium text-ink hover:text-blue-800"
                       >
                         Open audio file
                       </a>

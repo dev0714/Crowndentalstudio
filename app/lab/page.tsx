@@ -109,8 +109,8 @@ const STAGE_SHORT: Record<string, string> = {
 
 // Column header gradient + text color
 const COLUMN_STYLE: Record<string, { header: string; badge: string; cardBorder: string; dot: string }> = {
-  [LAB_WORKFLOW_STAGE.NEW_PATIENT]:            { header: 'bg-gradient-to-r from-blue-600 to-blue-500',       badge: 'bg-blue-400/40 text-white',    cardBorder: 'border-l-blue-400',    dot: 'bg-blue-400' },
-  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]:  { header: 'bg-gradient-to-r from-cyan-600 to-cyan-500',       badge: 'bg-cyan-400/40 text-white',    cardBorder: 'border-l-cyan-400',    dot: 'bg-cyan-400' },
+  [LAB_WORKFLOW_STAGE.NEW_PATIENT]:            { header: 'bg-navy-800',       badge: 'bg-blue-400/40 text-white',    cardBorder: 'border-l-blue-400',    dot: 'bg-blue-400' },
+  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]:  { header: 'bg-teal',       badge: 'bg-cyan-400/40 text-white',    cardBorder: 'border-l-cyan-400',    dot: 'bg-cyan-400' },
   [LAB_WORKFLOW_STAGE.AT_LAB]:                 { header: 'bg-gradient-to-r from-violet-600 to-violet-500',   badge: 'bg-violet-400/40 text-white',  cardBorder: 'border-l-violet-400',  dot: 'bg-violet-400' },
   [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]:    { header: 'bg-gradient-to-r from-emerald-600 to-emerald-500', badge: 'bg-emerald-400/40 text-white', cardBorder: 'border-l-emerald-400', dot: 'bg-emerald-400' },
 };
@@ -373,7 +373,7 @@ function LabContent() {
           <div className="flex gap-2">
             <Button
               onClick={() => setShowCreateForm((v) => !v)}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md text-xs"
+              className="bg-navy-800 hover:bg-ink border-0 shadow-md text-xs"
             >
               {showCreateForm ? 'Hide Form' : '+ New Case'}
             </Button>
@@ -387,10 +387,10 @@ function LabContent() {
       {/* Stat cards */}
       <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Open Cases', value: openCases.length, gradient: 'from-blue-600 to-cyan-500' },
-          { label: 'At Lab', value: labCases.filter((item) => item.workflow_stage === LAB_WORKFLOW_STAGE.AT_LAB).length, gradient: 'from-violet-600 to-purple-500' },
-          { label: 'Recall Needed', value: recallCases.length, gradient: 'from-amber-500 to-orange-500' },
-          { label: 'Delivered', value: closedCases.length, gradient: 'from-emerald-600 to-teal-500' },
+          { label: 'Open Cases', value: openCases.length, gradient: 'from-navy-800 to-ink' },
+          { label: 'At Lab', value: labCases.filter((item) => item.workflow_stage === LAB_WORKFLOW_STAGE.AT_LAB).length, gradient: 'from-[#3f4c7a] to-[#2c365c]' },
+          { label: 'Recall Needed', value: recallCases.length, gradient: 'from-[#b8742e] to-[#8f5a22]' },
+          { label: 'Delivered', value: closedCases.length, gradient: 'from-teal to-[#0b6f71]' },
         ].map((card) => (
           <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
             <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -422,7 +422,7 @@ function LabContent() {
               <select
                 value={newCase.patient_id}
                 onChange={(e) => setNewCase({ ...newCase, patient_id: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
               >
                 <option value="">Select patient</option>
                 {patients.map((patient) => (
@@ -439,7 +439,7 @@ function LabContent() {
               <select
                 value={newCase.workflow_stage}
                 onChange={(e) => setNewCase({ ...newCase, workflow_stage: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
               >
                 {LAB_WORKFLOW_STAGES.map((stage) => (
                   <option key={stage} value={stage}>{stage}</option>
@@ -448,7 +448,7 @@ function LabContent() {
               <Textarea value={newCase.slip_text} onChange={(e) => setNewCase({ ...newCase, slip_text: e.target.value })} placeholder="Slip notes" rows={2} className="md:col-span-2 lg:col-span-2 rounded-xl border-slate-200" />
               <Textarea value={newCase.description} onChange={(e) => setNewCase({ ...newCase, description: e.target.value })} placeholder="Case description" rows={2} className="md:col-span-2 lg:col-span-3 rounded-xl border-slate-200" />
               <div className="md:col-span-2 lg:col-span-3 flex gap-3">
-                <Button onClick={createLabCase} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md" disabled={savingCaseId === 'new'}>
+                <Button onClick={createLabCase} className="bg-navy-800 hover:bg-ink border-0 shadow-md" disabled={savingCaseId === 'new'}>
                   {savingCaseId === 'new' ? 'Creating...' : 'Create Lab Case'}
                 </Button>
                 <Button variant="outline" onClick={() => setShowCreateForm(false)} className="border-slate-200">Cancel</Button>
@@ -500,7 +500,7 @@ function LabContent() {
                       <div
                         className={`flex-1 p-2 space-y-2 transition-colors min-h-[400px] ${
                           isOver
-                            ? 'bg-blue-50 border-2 border-dashed border-blue-300'
+                            ? 'bg-teal-soft border-2 border-dashed border-blue-300'
                             : 'bg-slate-50/70'
                         }`}
                       >
@@ -573,7 +573,7 @@ function LabContent() {
                                 <button
                                   onClick={() => isExpanded ? closeWorkflowForm() : openWorkflowForm(labCase)}
                                   disabled={isSaving}
-                                  className="mt-2 w-full text-[11px] font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 py-1 px-2 rounded-lg transition-colors border border-slate-100 hover:border-blue-200"
+                                  className="mt-2 w-full text-[11px] font-medium text-slate-500 hover:text-teal hover:bg-cream py-1 px-2 rounded-lg transition-colors border border-slate-100 hover:border-teal/30"
                                 >
                                   {isExpanded ? 'Cancel' : 'Log event →'}
                                 </button>
@@ -585,7 +585,7 @@ function LabContent() {
                                   <select
                                     value={workflowForm.event_type}
                                     onChange={(e) => updateWorkflowForm('event_type', e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-300"
+                                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal/30"
                                   >
                                     {Object.entries(EVENT_LABELS).map(([value, label]) => (
                                       <option key={value} value={value}>{label}</option>
@@ -594,7 +594,7 @@ function LabContent() {
                                   <select
                                     value={workflowForm.workflow_stage}
                                     onChange={(e) => updateWorkflowForm('workflow_stage', e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-300"
+                                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-teal/30"
                                   >
                                     {LAB_WORKFLOW_STAGES.map((s) => (
                                       <option key={s} value={s}>{STAGE_SHORT[s] || s}</option>
@@ -605,12 +605,12 @@ function LabContent() {
                                     onChange={(e) => updateWorkflowForm('notes', e.target.value)}
                                     placeholder="Notes..."
                                     rows={2}
-                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-blue-300 resize-none"
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-teal/30 resize-none"
                                   />
                                   <button
                                     onClick={() => submitWorkflowEvent(labCase)}
                                     disabled={isSaving}
-                                    className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-[11px] font-semibold py-1.5 hover:from-blue-700 hover:to-cyan-700 transition-all"
+                                    className="w-full rounded-lg bg-navy-800 text-white text-[11px] font-semibold py-1.5 hover:from-blue-700 hover:to-cyan-700 transition-all"
                                   >
                                     {isSaving ? 'Saving...' : 'Save event'}
                                   </button>
@@ -647,7 +647,7 @@ function LabContent() {
                   const style = COLUMN_STYLE[labCase.workflow_stage] || COLUMN_STYLE[LAB_WORKFLOW_STAGE.NEW_PATIENT];
 
                   return (
-                    <div key={labCase.id} className={`rounded-xl border bg-white p-4 hover:border-blue-200 transition-colors border-l-4 ${style.cardBorder}`}>
+                    <div key={labCase.id} className={`rounded-xl border bg-white p-4 hover:border-teal/30 transition-colors border-l-4 ${style.cardBorder}`}>
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -662,7 +662,7 @@ function LabContent() {
                             )}
                           </div>
                           <p className="font-semibold text-slate-900">
-                            <Link href={`/patients/${labCase.patient_id}`} className="hover:text-blue-600 hover:underline">{labCase.patient_name}</Link>
+                            <Link href={`/patients/${labCase.patient_id}`} className="hover:text-teal hover:underline">{labCase.patient_name}</Link>
                           </p>
                           <p className="text-sm text-slate-600 mt-1">{labCase.case_number} · {labCase.case_type}</p>
                           <p className="text-sm text-slate-500 mt-1">
@@ -686,7 +686,7 @@ function LabContent() {
                           <Button
                             onClick={() => isOpen ? closeWorkflowForm() : openWorkflowForm(labCase)}
                             variant={isOpen ? 'outline' : 'default'}
-                            className={isOpen ? 'border-slate-200 text-xs' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-sm text-xs'}
+                            className={isOpen ? 'border-slate-200 text-xs' : 'bg-navy-800 hover:bg-ink border-0 shadow-sm text-xs'}
                             disabled={savingCaseId === labCase.id}
                           >
                             {savingCaseId === labCase.id ? 'Saving...' : isOpen ? 'Cancel' : 'Update workflow'}
@@ -699,7 +699,7 @@ function LabContent() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <label className="space-y-1.5">
                               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Event</span>
-                              <select value={workflowForm.event_type} onChange={(e) => updateWorkflowForm('event_type', e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                              <select value={workflowForm.event_type} onChange={(e) => updateWorkflowForm('event_type', e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30">
                                 {Object.entries(EVENT_LABELS).map(([value, label]) => (
                                   <option key={value} value={value}>{label}</option>
                                 ))}
@@ -707,7 +707,7 @@ function LabContent() {
                             </label>
                             <label className="space-y-1.5">
                               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Workflow stage</span>
-                              <select value={workflowForm.workflow_stage} onChange={(e) => updateWorkflowForm('workflow_stage', e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+                              <select value={workflowForm.workflow_stage} onChange={(e) => updateWorkflowForm('workflow_stage', e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal/30">
                                 {LAB_WORKFLOW_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
                               </select>
                             </label>
@@ -735,7 +735,7 @@ function LabContent() {
                             </label>
                           </div>
                           <div className="flex flex-wrap gap-3">
-                            <Button onClick={() => submitWorkflowEvent(labCase)} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md" disabled={savingCaseId === labCase.id}>
+                            <Button onClick={() => submitWorkflowEvent(labCase)} className="bg-navy-800 hover:bg-ink border-0 shadow-md" disabled={savingCaseId === labCase.id}>
                               {savingCaseId === labCase.id ? 'Saving...' : 'Save event'}
                             </Button>
                             <Button variant="outline" onClick={closeWorkflowForm} disabled={savingCaseId === labCase.id} className="border-slate-200">

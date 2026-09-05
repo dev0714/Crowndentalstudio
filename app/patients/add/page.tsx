@@ -147,7 +147,7 @@ export default function AddPatientPage() {
 
   return (
     <DashboardLayout>
-      <div className="bg-[#f1f5f9] min-h-full">
+      <div className="bg-cream min-h-full">
         {/* Header bar */}
         <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 px-6 lg:px-8 py-6">
           <div className="max-w-4xl mx-auto">
@@ -227,7 +227,7 @@ export default function AddPatientPage() {
                       name="gender"
                       value={formData.gender}
                       onChange={handleChange}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                     >
                       <option value="">Select gender</option>
                       <option value="M">Male</option>
@@ -320,7 +320,7 @@ export default function AddPatientPage() {
                   onChange={handleChange}
                   placeholder="List any allergies"
                   rows={3}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                 />
                 <textarea
                   name="medicalConditions"
@@ -328,7 +328,7 @@ export default function AddPatientPage() {
                   onChange={handleChange}
                   placeholder="Medical conditions"
                   rows={3}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                 />
                 <textarea
                   name="currentMedications"
@@ -336,7 +336,7 @@ export default function AddPatientPage() {
                   onChange={handleChange}
                   placeholder="Current medications"
                   rows={3}
-                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                 />
               </CardContent>
             </Card>
@@ -394,7 +394,7 @@ export default function AddPatientPage() {
                     name="preferredContactMethod"
                     value={formData.preferredContactMethod}
                     onChange={handleChange}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                   >
                     <option value="mobile">Mobile</option>
                     <option value="phone">Phone</option>
@@ -450,7 +450,7 @@ export default function AddPatientPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 shadow-md px-8"
+                className="bg-navy-800 hover:bg-ink text-white border-0 shadow-md px-8"
               >
                 {loading ? 'Creating…' : 'Create Patient'}
               </Button>

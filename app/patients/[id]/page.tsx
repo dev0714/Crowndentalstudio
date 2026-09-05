@@ -923,7 +923,7 @@ function PatientDetailContent() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-full bg-[#f1f5f9]">
+      <div className="min-h-full bg-cream">
 
         {/* Patient Hero Header */}
         <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 px-6 lg:px-8 pt-6 pb-0">
@@ -954,7 +954,7 @@ function PatientDetailContent() {
                     </>
                   ) : (
                     <Button onClick={() => setIsEditing(true)} size="sm"
-                      className="bg-white text-blue-700 hover:bg-blue-50 border-0 shadow-md font-bold">
+                      className="bg-white text-ink hover:bg-cream border-0 shadow-md font-bold">
                       <Edit2 className="w-3.5 h-3.5 mr-1.5" />
                       Edit Patient
                     </Button>
@@ -992,7 +992,7 @@ function PatientDetailContent() {
                   className={[
                     'flex-shrink-0 px-4 py-2.5 text-[13px] font-semibold rounded-t-lg transition-all border-b-2',
                     activeTab === tab.id
-                      ? 'bg-[#f1f5f9] text-blue-700 border-transparent'
+                      ? 'bg-cream text-ink border-transparent'
                       : 'text-white/60 hover:text-white/90 border-transparent hover:bg-white/10',
                   ].join(' ')}
                 >
@@ -1020,7 +1020,7 @@ function PatientDetailContent() {
               <div className="flex justify-end">
                 <Button
                   onClick={() => router.push(`/appointments?patientId=${patientId}&open=1`)}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md border-0"
+                  className="bg-navy-800 hover:bg-ink text-white shadow-md border-0"
                 >
                   Book Appointment
                 </Button>
@@ -1044,7 +1044,7 @@ function PatientDetailContent() {
                         field === 'date_of_birth' ? (
                           <Input type="date" name={field} value={formData[field as keyof PatientDetail] || ''} onChange={handleInputChange} className="rounded-xl border-slate-200" />
                         ) : field === 'gender' ? (
-                          <select name={field} value={formData.gender || ''} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                          <select name={field} value={formData.gender || ''} onChange={handleInputChange} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                             <option value="">Select</option>
                             <option value="M">Male</option>
                             <option value="F">Female</option>
@@ -1124,21 +1124,21 @@ function PatientDetailContent() {
                     <CardTitle className="text-base">Add Item</CardTitle>
                   </CardHeader>
                   <CardContent className="p-5 space-y-3">
-                    <select value={newHistoryType} onChange={(e) => setNewHistoryType(e.target.value as 'allergy' | 'condition' | 'medication')} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={newHistoryType} onChange={(e) => setNewHistoryType(e.target.value as 'allergy' | 'condition' | 'medication')} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value="allergy">Allergy</option>
                       <option value="condition">Condition</option>
                       <option value="medication">Medication</option>
                     </select>
                     <Input placeholder="Description" value={newHistoryDesc} onChange={(e) => setNewHistoryDesc(e.target.value)} className="rounded-xl border-slate-200" />
                     {newHistoryType === 'allergy' && (
-                      <select value={newHistorySeverity} onChange={(e) => setNewHistorySeverity(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                      <select value={newHistorySeverity} onChange={(e) => setNewHistorySeverity(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                         <option value="">Severity (optional)</option>
                         <option value="mild">Mild</option>
                         <option value="moderate">Moderate</option>
                         <option value="severe">Severe</option>
                       </select>
                     )}
-                    <Button onClick={addMedicalHistoryItem} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md">
+                    <Button onClick={addMedicalHistoryItem} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md">
                       <Plus className="w-4 h-4 mr-2" />Add Item
                     </Button>
                   </CardContent>
@@ -1146,7 +1146,7 @@ function PatientDetailContent() {
               </div>
               <div className="lg:col-span-2 space-y-3">
                 {medicalHistory.length > 0 ? medicalHistory.map((item) => {
-                  const colors: Record<string, string> = { allergy: 'border-l-red-400 bg-red-50', condition: 'border-l-amber-400 bg-amber-50', medication: 'border-l-blue-400 bg-blue-50' };
+                  const colors: Record<string, string> = { allergy: 'border-l-red-400 bg-red-50', condition: 'border-l-amber-400 bg-amber-50', medication: 'border-l-blue-400 bg-teal-soft' };
                   return (
                     <div key={item.id} className={`flex items-start justify-between p-4 rounded-2xl border border-slate-200 border-l-4 ${colors[item.type] || 'bg-white'} bg-white`}>
                       <div>
@@ -1176,7 +1176,7 @@ function PatientDetailContent() {
                     <Input placeholder="Dependent Code" value={aidFormData.dependent_code} onChange={(e) => setAidFormData({...aidFormData, dependent_code: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input placeholder="Main Member Name" value={aidFormData.main_member_name} onChange={(e) => setAidFormData({...aidFormData, main_member_name: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input placeholder="Main Member ID" value={aidFormData.main_member_id} onChange={(e) => setAidFormData({...aidFormData, main_member_id: e.target.value})} className="rounded-xl border-slate-200" />
-                    <Button onClick={saveMedicalAid} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md">Save Medical Aid</Button>
+                    <Button onClick={saveMedicalAid} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md">Save Medical Aid</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -1227,7 +1227,7 @@ function PatientDetailContent() {
                       <Input key={field} placeholder={placeholder} value={(authorizationFormData as Record<string, string>)[field]} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, [field]: e.target.value })} className="rounded-xl border-slate-200" />
                     ))}
                     <Input type="date" value={authorizationFormData.authorization_requested_date} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, authorization_requested_date: e.target.value })} className="rounded-xl border-slate-200" />
-                    <select value={authorizationFormData.status} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, status: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={authorizationFormData.status} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, status: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value={MEDICAL_AID_AUTHORIZATION_STATUS.PENDING}>Pending</option>
                       <option value={MEDICAL_AID_AUTHORIZATION_STATUS.APPROVED}>Approved</option>
                       <option value={MEDICAL_AID_AUTHORIZATION_STATUS.REJECTED}>Rejected</option>
@@ -1237,17 +1237,17 @@ function PatientDetailContent() {
                     {['authorized_amount','co_payment_amount','patient_shortfall_amount'].map((f) => (
                       <Input key={f} type="number" placeholder={f.replace(/_/g,' ')} value={(authorizationFormData as Record<string,string>)[f]} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, [f]: e.target.value })} className="rounded-xl border-slate-200" />
                     ))}
-                    <textarea placeholder="Notes" value={authorizationFormData.notes} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, notes: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" rows={3} />
-                    <Button onClick={addAuthorization} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Authorization</Button>
+                    <textarea placeholder="Notes" value={authorizationFormData.notes} onChange={(e) => setAuthorizationFormData({ ...authorizationFormData, notes: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30" rows={3} />
+                    <Button onClick={addAuthorization} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Authorization</Button>
                   </CardContent>
                 </Card>
               </div>
               <div className="lg:col-span-2 space-y-3">
                 {authorizations.length > 0 ? authorizations.map((auth) => {
                   const statusColors: Record<string, string> = { Approved: 'bg-emerald-50 text-emerald-700 border-emerald-200', Rejected: 'bg-red-50 text-red-700 border-red-200', Pending: 'bg-amber-50 text-amber-700 border-amber-200', Expired: 'bg-slate-100 text-slate-600 border-slate-200' };
-                  const sc = statusColors[auth.status] || 'bg-blue-50 text-blue-700 border-blue-200';
+                  const sc = statusColors[auth.status] || 'bg-teal-soft text-ink border-teal/30';
                   return (
-                    <div key={auth.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-200 transition-colors">
+                    <div key={auth.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-teal/30 transition-colors">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-slate-900">{auth.procedure_name}</p>
@@ -1302,15 +1302,15 @@ function PatientDetailContent() {
                   <CardContent className="p-5 space-y-3">
                     <Input type="date" value={clinicalFormData.visit_date} onChange={(e) => setClinicalFormData({...clinicalFormData, visit_date: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input placeholder="Diagnosis" value={clinicalFormData.diagnosis} onChange={(e) => setClinicalFormData({...clinicalFormData, diagnosis: e.target.value})} className="rounded-xl border-slate-200" />
-                    <textarea placeholder="Notes" value={clinicalFormData.notes} onChange={(e) => setClinicalFormData({...clinicalFormData, notes: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" rows={3} />
+                    <textarea placeholder="Notes" value={clinicalFormData.notes} onChange={(e) => setClinicalFormData({...clinicalFormData, notes: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30" rows={3} />
                     <Input placeholder="Procedures (optional)" value={clinicalFormData.procedures} onChange={(e) => setClinicalFormData({...clinicalFormData, procedures: e.target.value})} className="rounded-xl border-slate-200" />
-                    <Button onClick={addClinicalNote} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Note</Button>
+                    <Button onClick={addClinicalNote} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Note</Button>
                   </CardContent>
                 </Card>
               </div>
               <div className="lg:col-span-2 space-y-3">
                 {clinicalNotes.length > 0 ? clinicalNotes.map((note) => (
-                  <div key={note.id} className="flex items-start gap-4 p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-200 transition-colors">
+                  <div key={note.id} className="flex items-start gap-4 p-5 bg-white rounded-2xl border border-slate-200 hover:border-teal/30 transition-colors">
                     <div className="w-1 self-stretch rounded-full bg-gradient-to-b from-blue-400 to-cyan-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{formatDateSA(note.visit_date)}</p>
@@ -1335,25 +1335,25 @@ function PatientDetailContent() {
                   </CardHeader>
                   <CardContent className="p-5 space-y-3">
                     <Input placeholder="Plan Name" value={treatmentFormData.plan_name} onChange={(e) => setTreatmentFormData({...treatmentFormData, plan_name: e.target.value})} className="rounded-xl border-slate-200" />
-                    <textarea placeholder="Description" value={treatmentFormData.description} onChange={(e) => setTreatmentFormData({...treatmentFormData, description: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" rows={3} />
-                    <select value={treatmentFormData.status} onChange={(e) => setTreatmentFormData({...treatmentFormData, status: e.target.value as 'proposed' | 'accepted'})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <textarea placeholder="Description" value={treatmentFormData.description} onChange={(e) => setTreatmentFormData({...treatmentFormData, description: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30" rows={3} />
+                    <select value={treatmentFormData.status} onChange={(e) => setTreatmentFormData({...treatmentFormData, status: e.target.value as 'proposed' | 'accepted'})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value="proposed">Proposed</option>
                       <option value="accepted">Accepted</option>
                     </select>
-                    <Button onClick={addTreatmentPlan} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Plan</Button>
+                    <Button onClick={addTreatmentPlan} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Plan</Button>
                   </CardContent>
                 </Card>
               </div>
               <div className="lg:col-span-2 space-y-3">
                 {treatmentPlans.length > 0 ? treatmentPlans.map((plan) => (
-                  <div key={plan.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-200 transition-colors">
+                  <div key={plan.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-teal/30 transition-colors">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-slate-900">{plan.plan_name}</p>
                         <p className="text-sm text-slate-600 mt-1">{plan.description}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${plan.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>{plan.status}</span>
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${plan.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-teal-soft text-ink border border-teal/30'}`}>{plan.status}</span>
                         {plan.status === 'proposed' && (
                           <Button onClick={() => approveTreatmentPlan(plan)} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 text-xs">Approve</Button>
                         )}
@@ -1376,7 +1376,7 @@ function PatientDetailContent() {
                     <Input placeholder="Description" value={quoteFormData.description} onChange={(e) => setQuoteFormData({...quoteFormData, description: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input type="number" placeholder="Amount (R)" value={quoteFormData.amount} onChange={(e) => setQuoteFormData({...quoteFormData, amount: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input type="date" value={quoteFormData.date} onChange={(e) => setQuoteFormData({...quoteFormData, date: e.target.value})} className="rounded-xl border-slate-200" />
-                    <Button onClick={addQuote} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Quote</Button>
+                    <Button onClick={addQuote} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Quote</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -1404,8 +1404,8 @@ function PatientDetailContent() {
                     <Input type="number" placeholder="Amount (R)" value={paymentFormData.amount} onChange={(e) => setPaymentFormData({...paymentFormData, amount: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input type="date" value={paymentFormData.date} onChange={(e) => setPaymentFormData({...paymentFormData, date: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input placeholder="Payment Method" value={paymentFormData.method} onChange={(e) => setPaymentFormData({...paymentFormData, method: e.target.value})} className="rounded-xl border-slate-200" />
-                    <textarea placeholder="Notes (optional)" value={paymentFormData.notes} onChange={(e) => setPaymentFormData({...paymentFormData, notes: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" rows={2} />
-                    <Button onClick={addPayment} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Payment</Button>
+                    <textarea placeholder="Notes (optional)" value={paymentFormData.notes} onChange={(e) => setPaymentFormData({...paymentFormData, notes: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal/30" rows={2} />
+                    <Button onClick={addPayment} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Payment</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -1430,16 +1430,16 @@ function PatientDetailContent() {
                 <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden sticky top-4">
                   <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6"><CardTitle className="text-base">Record Consent</CardTitle></CardHeader>
                   <CardContent className="p-5 space-y-3">
-                    <select value={consentFormData.consent_type} onChange={(e) => setConsentFormData({...consentFormData, consent_type: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={consentFormData.consent_type} onChange={(e) => setConsentFormData({...consentFormData, consent_type: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value="">Select Consent Type</option>
                       {PATIENT_CONSENT_TYPES.map((type) => (<option key={type} value={type}>{type.replace(/_/g, ' ')}</option>))}
                     </select>
-                    <select value={consentFormData.value ? 'yes' : 'no'} onChange={(e) => setConsentFormData({...consentFormData, value: e.target.value === 'yes'})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={consentFormData.value ? 'yes' : 'no'} onChange={(e) => setConsentFormData({...consentFormData, value: e.target.value === 'yes'})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value="yes">Consent Given</option>
                       <option value="no">Consent Not Given</option>
                     </select>
                     <Input type="date" value={consentFormData.date} onChange={(e) => setConsentFormData({...consentFormData, date: e.target.value})} className="rounded-xl border-slate-200" />
-                    <Button onClick={addConsent} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Consent</Button>
+                    <Button onClick={addConsent} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Consent</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -1470,7 +1470,7 @@ function PatientDetailContent() {
                   <select
                     value={documentFormData.document_type}
                     onChange={(e) => setDocumentFormData({ ...documentFormData, document_type: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                   >
                     <option value="treatment_plan">Treatment Plan</option>
                     <option value="referral_letter">Referral Letter</option>
@@ -1490,7 +1490,7 @@ function PatientDetailContent() {
                   <select
                     value={documentFormData.consent_type}
                     onChange={(e) => setDocumentFormData({ ...documentFormData, consent_type: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30"
                   >
                     <option value="">Consent type</option>
                     <option value="treatment">Treatment</option>
@@ -1575,7 +1575,7 @@ function PatientDetailContent() {
                     />
                     Signed by guardian
                   </label>
-                  <Button onClick={generateDocument} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md">
+                  <Button onClick={generateDocument} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md">
                     <Plus className="w-4 h-4 mr-2" />Generate Document
                   </Button>
                   </div>
@@ -1584,13 +1584,13 @@ function PatientDetailContent() {
             </div>
             <div className="lg:col-span-2 space-y-3">
                 {documents.length > 0 ? documents.map((doc) => (
-                  <div key={doc.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-200 transition-colors">
+                  <div key={doc.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-teal/30 transition-colors">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
                         <p className="text-sm font-bold text-slate-900">{doc.title}</p>
                         <p className="text-xs text-slate-500 mt-0.5 capitalize">{doc.document_type.replace(/_/g, ' ')} · {formatDateSA(doc.created_at)}</p>
                       </div>
-                      <span className={`flex-shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full ${doc.status === 'signed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                      <span className={`flex-shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full ${doc.status === 'signed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-teal-soft text-ink border border-teal/30'}`}>
                         {doc.status}
                       </span>
                     </div>
@@ -1611,8 +1611,8 @@ function PatientDetailContent() {
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { label: 'Latest Outcome', value: latestFeedback ? `${latestFeedback.feedback_type} / ${latestFeedback.outcome.replace(/_/g,' ')}` : 'No feedback yet', color: 'from-blue-600 to-cyan-500' },
-                  { label: 'Review Status', value: reviewEligible ? 'Safe to prompt' : 'Hold public review', color: reviewEligible ? 'from-emerald-600 to-teal-500' : 'from-amber-500 to-orange-500' },
+                  { label: 'Latest Outcome', value: latestFeedback ? `${latestFeedback.feedback_type} / ${latestFeedback.outcome.replace(/_/g,' ')}` : 'No feedback yet', color: 'from-navy-800 to-ink' },
+                  { label: 'Review Status', value: reviewEligible ? 'Safe to prompt' : 'Hold public review', color: reviewEligible ? 'from-teal to-[#0b6f71]' : 'from-[#b8742e] to-[#8f5a22]' },
                   { label: 'Follow-up', value: complaintNeedsFollowUp ? 'Manager follow-up needed' : 'No action needed', color: complaintNeedsFollowUp ? 'from-red-500 to-rose-500' : 'from-slate-600 to-slate-500' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} p-5 text-white shadow-md`}>
@@ -1662,14 +1662,14 @@ function PatientDetailContent() {
                     <Input placeholder="Claim Number" value={claimFormData.claim_number} onChange={(e) => setClaimFormData({...claimFormData, claim_number: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input type="number" placeholder="Amount (R)" value={claimFormData.amount} onChange={(e) => setClaimFormData({...claimFormData, amount: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input type="date" value={claimFormData.date} onChange={(e) => setClaimFormData({...claimFormData, date: e.target.value})} className="rounded-xl border-slate-200" />
-                    <select value={claimFormData.status} onChange={(e) => setClaimFormData({...claimFormData, status: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={claimFormData.status} onChange={(e) => setClaimFormData({...claimFormData, status: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value={CLAIM_STATUS.SUBMITTED}>{CLAIM_STATUS.SUBMITTED}</option>
                       <option value={CLAIM_STATUS.UNDER_REVIEW}>{CLAIM_STATUS.UNDER_REVIEW}</option>
                       <option value={CLAIM_STATUS.APPROVED}>{CLAIM_STATUS.APPROVED}</option>
                       <option value={CLAIM_STATUS.REJECTED}>{CLAIM_STATUS.REJECTED}</option>
                       <option value={CLAIM_STATUS.PAID}>{CLAIM_STATUS.PAID}</option>
                     </select>
-                    <Button onClick={addClaim} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Claim</Button>
+                    <Button onClick={addClaim} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Record Claim</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -1679,7 +1679,7 @@ function PatientDetailContent() {
                     <div><p className="text-sm font-semibold text-slate-900">{claim.claim_number}</p><p className="text-xs text-slate-500 mt-0.5">{formatDateSA(claim.date)}</p></div>
                     <div className="flex items-center gap-3">
                       <p className="text-base font-bold text-slate-900">R{claim.amount.toFixed(2)}</p>
-                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">{claim.status}</span>
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-teal-soft text-ink border border-teal/30">{claim.status}</span>
                       <Button onClick={() => deleteClaim(claim.id)} variant="outline" size="sm" className="border-slate-200 hover:border-red-200 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
                   </div>
@@ -1697,7 +1697,7 @@ function PatientDetailContent() {
                   <CardContent className="p-5 space-y-3">
                     <Input placeholder="Case Number" value={labFormData.case_number} onChange={(e) => setLabFormData({...labFormData, case_number: e.target.value})} className="rounded-xl border-slate-200" />
                     <Input placeholder="Description" value={labFormData.description} onChange={(e) => setLabFormData({...labFormData, description: e.target.value})} className="rounded-xl border-slate-200" />
-                    <select value={labFormData.status} onChange={(e) => setLabFormData({...labFormData, status: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <select value={labFormData.status} onChange={(e) => setLabFormData({...labFormData, status: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                       <option value={LAB_CASE_STATUS.RECEIVED}>{LAB_CASE_STATUS.RECEIVED}</option>
                       <option value={LAB_CASE_STATUS.IN_PROGRESS}>{LAB_CASE_STATUS.IN_PROGRESS}</option>
                       <option value={LAB_CASE_STATUS.QUALITY_CHECK}>{LAB_CASE_STATUS.QUALITY_CHECK}</option>
@@ -1706,7 +1706,7 @@ function PatientDetailContent() {
                       <option value={LAB_CASE_STATUS.ON_HOLD}>{LAB_CASE_STATUS.ON_HOLD}</option>
                     </select>
                     <Input type="date" value={labFormData.date} onChange={(e) => setLabFormData({...labFormData, date: e.target.value})} className="rounded-xl border-slate-200" />
-                    <Button onClick={addLabCase} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Lab Case</Button>
+                    <Button onClick={addLabCase} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md"><Plus className="w-4 h-4 mr-2" />Add Lab Case</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -1731,9 +1731,9 @@ function PatientDetailContent() {
                 <CardTitle className="text-base">Communications</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-5">
-                <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl space-y-3">
-                  <h3 className="text-sm font-bold text-blue-900">Record Message</h3>
-                  <select value={messageFormData.message_type} onChange={(e) => setMessageFormData({...messageFormData, message_type: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <div className="bg-teal-soft border border-hairline p-5 rounded-2xl space-y-3">
+                  <h3 className="text-sm font-bold text-ink">Record Message</h3>
+                  <select value={messageFormData.message_type} onChange={(e) => setMessageFormData({...messageFormData, message_type: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">
                     <option value="">Select Type</option>
                     {PATIENT_MESSAGE_TYPES.map((type) => (
                       <option key={type} value={type}>
@@ -1741,20 +1741,20 @@ function PatientDetailContent() {
                       </option>
                     ))}
                   </select>
-                  <textarea placeholder="Message Content" value={messageFormData.content} onChange={(e) => setMessageFormData({...messageFormData, content: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300" rows={3}></textarea>
+                  <textarea placeholder="Message Content" value={messageFormData.content} onChange={(e) => setMessageFormData({...messageFormData, content: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30" rows={3}></textarea>
                   <p className="text-[11px] text-blue-800/80">
                     {messageFormData.message_type === 'email'
                       ? 'Email messages are sent to the patient’s email address via Resend.'
                       : 'WhatsApp, SMS and social messages are recorded in the log only — no sending provider is connected for those channels yet. Choose Email to actually send.'}
                   </p>
-                  <Button onClick={addMessage} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white border-0 w-full shadow-md">
+                  <Button onClick={addMessage} className="bg-navy-800 hover:bg-ink text-white border-0 w-full shadow-md">
                     <Plus className="w-4 h-4 mr-2" />
                     {messageFormData.message_type === 'email' ? 'Send Email' : 'Record Message'}
                   </Button>
                 </div>
                 <div className="space-y-2">
                   {messages.length > 0 ? messages.map((msg) => (
-                    <div key={msg.id} className="flex items-start justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-200 transition-colors">
+                    <div key={msg.id} className="flex items-start justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-teal/30 transition-colors">
                       <div className="flex-1">
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{msg.message_type} · {formatDateSA(msg.timestamp)}</p>
                         <p className="text-sm text-slate-700 mt-1">{msg.content}</p>

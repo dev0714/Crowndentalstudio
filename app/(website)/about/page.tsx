@@ -1,156 +1,80 @@
-'use client'
-
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart, Zap, Users, Clock, ArrowRight, CheckCircle } from 'lucide-react'
-import { FadeInUp, FadeInLeft, FadeInRight, StaggerContainer, StaggerItem, FloatingBlob, FloatingBlobAlt, HeroText } from '@/components/motion'
+import { FadeInUp, Parallax, StaggerContainer, StaggerItem } from '@/components/motion'
+import { Arrow, CtaBand, Eyebrow, PageHero, SectionTitle } from '@/components/website/primitives'
+
+const values = [
+  { title: 'Compassionate care', body: 'We treat every patient like family, with comfort and dignity in every visit.' },
+  { title: 'Modern technology', body: '[EQUIPMENT PLACEHOLDER] — current equipment and proven techniques for the best possible outcomes.' },
+  { title: 'All ages welcome', body: 'From children to seniors, we care for every member of your family — including anxious patients and those with developmental or medical conditions.' },
+  { title: 'Ready for emergencies', body: 'A 24-hour on-call line, so we are here when you need us most — day or night.' },
+]
+
+const team = [
+  { name: 'Dr Amod', role: 'Principal Dentist', note: '20+ years’ experience · [QUALIFICATION]', image: '/dr-amod.jpg' },
+  { name: 'Dr Sarah [SURNAME]', role: 'Restorative Specialist', note: 'Crowns & veneers · [QUALIFICATION]', image: '/dr-sarah.jpg' },
+  { name: 'Dr James [SURNAME]', role: 'Orthodontist', note: 'Braces & clear aligners · [QUALIFICATION]', image: '/dr-james.jpg' },
+]
+
+const principles = [
+  ['Excellence', 'in every treatment we provide.'],
+  ['Compassion', 'for every patient we meet.'],
+  ['Honesty', 'about options, costs and what to expect.'],
+]
 
 export default function About() {
-  const values = [
-    { icon: Heart, title: 'Compassionate Care', description: 'We treat every patient like family, ensuring comfort and dignity in every visit.', gradient: 'from-pink-400 to-rose-500' },
-    { icon: Zap, title: 'Advanced Technology', description: 'Latest equipment and techniques for the best possible outcomes.', gradient: 'from-yellow-400 to-orange-500' },
-    { icon: Users, title: 'All Ages Welcome', description: 'From children to seniors, we care for every member of your family.', gradient: 'from-blue-400 to-cyan-500' },
-    { icon: Clock, title: '24/7 Emergency Ready', description: 'Always here when you need us most — day or night.', gradient: 'from-purple-400 to-indigo-500' },
-  ]
-
-  const team = [
-    { name: 'Dr. Amod', title: 'Principal Dentist', image: '/dr-amod.jpg', specialty: '20+ Years Experience' },
-    { name: 'Dr. Sarah', title: 'Restorative Specialist', image: '/dr-sarah.jpg', specialty: 'Crowns & Veneers Expert' },
-    { name: 'Dr. James', title: 'Orthodontist', image: '/dr-james.jpg', specialty: 'Braces & Clear Aligners' },
-  ]
-
   return (
-    <main className="overflow-hidden">
+    <main className="overflow-x-clip bg-cream">
+      <PageHero
+        eyebrow="About the practice"
+        lines={['A team dedicated to', <><em className="italic font-normal text-[#CFEDED]">healthier</em> smiles.</>]}
+        intro="Comprehensive, team-based dental care for children and adults in Durban North — for more than twenty years."
+        image="/about-team.jpg"
+        imageAlt="The Crown Dental Studio team"
+      />
 
-      {/* ─── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative min-h-[50vh] flex items-end pb-16 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 overflow-hidden pt-28">
-        <FloatingBlob className="absolute top-10 right-20 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
-        <FloatingBlobAlt className="absolute bottom-0 left-10 w-64 h-64 bg-blue-300/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <HeroText>
-<h1 className="text-6xl md:text-7xl font-bold text-white leading-tight">
-              About Crown<br />
-              <span className="gradient-text">Dental Studio</span>
-            </h1>
-            <p className="text-xl text-white/75 mt-4 max-w-xl">
-              A team dedicated to transforming smiles and improving oral health across Durban North.
+      {/* Mission */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+          <FadeInUp>
+            <Eyebrow>Our mission</Eyebrow>
+            <div className="rule-draw w-14 h-px bg-teal mt-4 mb-7" aria-hidden="true" />
+            <h2 className="font-display font-medium text-ink text-[34px] sm:text-5xl lg:text-[56px] leading-[1.05] mb-6">Care that goes beyond the appointment.</h2>
+            <p className="text-base sm:text-lg leading-relaxed text-muted-ink mb-4">
+              We provide team-based, comprehensive dental care for children and adults, including patients of all ages who are anxious or have an underlying developmental or medical condition.
             </p>
-          </HeroText>
+            <p className="text-base leading-relaxed text-muted-ink">
+              Our commitment is to deliver exceptional care with compassion, using current technology and proven treatment methods — and to explain every step before we take it.
+            </p>
+            <div className="mt-8 divide-y divide-hairline border-y border-hairline">
+              {principles.map(([lead, rest]) => (
+                <p key={lead} className="py-4 text-[15px] leading-relaxed text-muted-ink"><strong className="font-semibold text-ink">{lead}</strong> {rest}</p>
+              ))}
+            </div>
+          </FadeInUp>
+          <FadeInUp delay={0.15}>
+            <Parallax className="relative h-[380px] sm:h-[480px] lg:h-[600px] overflow-hidden">
+              <div className="absolute -inset-y-[8%] inset-x-0">
+                <Image src="/dental-consultation.jpg" alt="A consultation at Crown Dental Studio" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
+              </div>
+            </Parallax>
+          </FadeInUp>
         </div>
       </section>
 
-      {/* ─── MISSION ──────────────────────────────────────────────── */}
-      <section className="relative py-28 bg-gradient-to-b from-slate-50 to-blue-50 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-cyan-100/60 to-transparent rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <FadeInLeft>
-              <div className="space-y-6">
+      {/* Values */}
+      <section className="bg-white py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-24">
+          <FadeInUp className="lg:col-span-5 lg:sticky lg:top-28 self-start">
+            <SectionTitle eyebrow="What drives us" title={<>Our core<br />values.</>} />
+          </FadeInUp>
+          <StaggerContainer className="lg:col-span-7 divide-y divide-hairline border-y border-hairline">
+            {values.map((v, i) => (
+              <StaggerItem key={v.title} className="grid grid-cols-[56px_1fr] sm:grid-cols-[72px_1fr] gap-5 sm:gap-6 py-7">
+                <div className="font-display text-[28px] text-teal leading-none pt-1">{String(i + 1).padStart(2, '0')}</div>
                 <div>
-                  <p className="text-blue-600 text-sm font-bold uppercase tracking-widest mb-3">Our Mission</p>
-                  <h2 className="text-5xl font-bold text-gray-900 leading-tight">
-                    Care That Goes{' '}
-                    <span className="gradient-text-blue">Beyond</span>
-                  </h2>
-                </div>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  We provide team-based, comprehensive dental care for children and adults, including patients of all ages who are anxious or have an underlying developmental or medical condition.
-                </p>
-                <p className="text-gray-500 leading-relaxed">
-                  Our commitment is to deliver exceptional care with compassion, utilizing advanced technology and proven treatment methodologies.
-                </p>
-                <div className="space-y-3 pt-2">
-                  {[
-                    { label: 'Excellence', desc: 'in every treatment we provide' },
-                    { label: 'Compassion', desc: 'for every patient we meet' },
-                    { label: 'Innovation', desc: 'in our approach and technology' },
-                  ].map(({ label, desc }) => (
-                    <div key={label} className="flex items-center gap-3 p-3 bg-white/70 rounded-2xl hover:bg-white transition-all">
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="w-4 h-4 text-white" />
-                      </div>
-                      <p className="text-gray-700">
-                        <span className="font-bold text-blue-900">{label}</span> {desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </FadeInLeft>
-
-            <FadeInRight>
-              <div className="relative h-[500px]">
-                {/* Main visual card */}
-                <div className="relative h-full w-full rounded-3xl overflow-hidden shadow-2xl shadow-blue-200">
-                  <Image src="/about-team.jpg" alt="Crown Dental Studio team" fill className="object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-blue-900/20 to-transparent" />
-                  {/* Overlay glass card */}
-                  <div className="absolute bottom-8 left-8 right-8 glass rounded-2xl p-5">
-                    <p className="text-white font-bold text-lg mb-1">Patient-Centered Care</p>
-                    <p className="text-white/75 text-sm">Your comfort and health are our highest priority</p>
-                  </div>
-                </div>
-              </div>
-            </FadeInRight>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── VALUES ───────────────────────────────────────────────── */}
-      <section className="relative py-28 overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500">
-        <FloatingBlob className="absolute top-10 left-10 w-80 h-80 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
-        <FloatingBlobAlt className="absolute bottom-10 right-10 w-72 h-72 bg-blue-300/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInUp className="text-center mb-16">
-            <p className="text-cyan-300 text-sm font-bold uppercase tracking-widest mb-3">What Drives Us</p>
-            <h2 className="text-5xl font-bold text-white leading-tight">Our Core Values</h2>
-          </FadeInUp>
-
-          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {values.map((value, idx) => {
-              const Icon = value.icon
-              return (
-                <StaggerItem key={idx}>
-                  <div className="glass-heavy rounded-3xl p-8 text-center hover:bg-white/25 transition-all duration-500 hover:-translate-y-2 group shine-on-hover relative overflow-hidden">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${value.gradient} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-3">{value.title}</h3>
-                    <p className="text-white/70 text-sm leading-relaxed">{value.description}</p>
-                  </div>
-                </StaggerItem>
-              )
-            })}
-          </StaggerContainer>
-        </div>
-      </section>
-
-      {/* ─── TEAM ─────────────────────────────────────────────────── */}
-      <section className="relative py-28 bg-gradient-to-b from-blue-50 to-white overflow-hidden">
-        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-gradient-to-br from-cyan-100/50 to-transparent rounded-full -translate-x-1/3 -translate-y-1/3 pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInUp className="text-center mb-16">
-            <p className="text-blue-600 text-sm font-bold uppercase tracking-widest mb-3">The People Behind Your Smile</p>
-            <h2 className="text-5xl font-bold text-gray-900 leading-tight">
-              Meet Our{' '}
-              <span className="gradient-text-blue">Expert Team</span>
-            </h2>
-          </FadeInUp>
-
-          <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, idx) => (
-              <StaggerItem key={idx}>
-                <div className="group relative glass-blue rounded-3xl p-8 text-center hover:-translate-y-3 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-200/50">
-                  <div className="w-36 h-36 rounded-full mx-auto mb-6 overflow-hidden ring-4 ring-blue-200/50 group-hover:ring-cyan-400/50 transition-all shadow-xl">
-                    <Image src={member.image} alt={member.name} width={144} height={144} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-blue-600 font-bold mb-2">{member.title}</p>
-                  <span className="inline-block px-4 py-1 rounded-full text-xs font-bold text-cyan-700 bg-cyan-100/80">{member.specialty}</span>
+                  <h3 className="font-display font-medium text-ink text-[26px] sm:text-[28px] leading-tight mb-1.5">{v.title}</h3>
+                  <p className="text-[15px] leading-relaxed text-muted-ink">{v.body}</p>
                 </div>
               </StaggerItem>
             ))}
@@ -158,25 +82,29 @@ export default function About() {
         </div>
       </section>
 
-      {/* ─── CTA ──────────────────────────────────────────────────── */}
-      <section className="relative py-24 overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500">
-        <FloatingBlob className="absolute top-10 right-10 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInUp>
-            <div className="glass-heavy rounded-3xl p-12 text-center glow-cyan">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                Ready to Experience<br />
-                <span className="gradient-text">Our Care?</span>
-              </h2>
-              <p className="text-white/75 mb-8 text-lg">Join thousands of happy patients who trust Crown Dental Studio.</p>
-              <Link href="/contact" className="inline-flex items-center gap-3 bg-white text-blue-700 px-10 py-4 rounded-2xl font-bold hover:shadow-2xl hover:scale-105 transition-all text-lg glow-white">
-                Book an Appointment
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
+      {/* Team */}
+      <section className="py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeInUp><SectionTitle eyebrow="The people behind your smile" title="Meet the team." className="mb-12 lg:mb-14" /></FadeInUp>
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-7">
+            {team.map((m) => (
+              <StaggerItem key={m.name} className="group">
+                <div className="relative h-[360px] sm:h-[260px] md:h-[320px] lg:h-[420px] overflow-hidden bg-hairline">
+                  <Image src={m.image} alt={m.name} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover grayscale-[15%] transition-[filter,transform] duration-700 ease-out group-hover:grayscale-0 group-hover:scale-[1.03]" />
+                </div>
+                <h3 className="font-display font-medium text-ink text-[28px] leading-tight mt-5 mb-1">{m.name}</h3>
+                <p className="text-sm font-semibold text-ink">{m.role}</p>
+                <p className="text-sm text-muted-ink mt-0.5">{m.note}</p>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+          <FadeInUp className="mt-12">
+            <Link href="/services" className="group inline-flex items-center gap-2 text-[15px] font-semibold text-ink hover:text-teal">See our treatments <Arrow /></Link>
           </FadeInUp>
         </div>
       </section>
+
+      <CtaBand title="Ready to experience our care?" />
     </main>
   )
 }

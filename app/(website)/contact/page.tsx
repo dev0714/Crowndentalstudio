@@ -2,93 +2,74 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Phone, Mail, MapPin, Clock, ArrowRight, Send, MessageCircle, Navigation } from 'lucide-react'
 import { useState } from 'react'
-import { FadeInUp, FadeInLeft, FadeInRight, StaggerContainer, StaggerItem, FloatingBlob, FloatingBlobAlt, HeroText } from '@/components/motion'
+import { Phone, Mail, MapPin, Clock, MessageCircle, Navigation } from 'lucide-react'
+import { FadeInUp, FadeUp, RevealLines, StaggerContainer, StaggerItem } from '@/components/motion'
+import { Arrow, Eyebrow, btn, CONTACT_EMAIL, DIRECTIONS_HREF, PHONE_DISPLAY, PHONE_HREF, WHATSAPP_HREF } from '@/components/website/primitives'
+
+const services = [
+  'Cosmetic & Aesthetic Dentistry', 'Crowns, Bridges & Veneers', 'Dental Fillings', 'Endodontics (Root Canals)', 'Extractions',
+  'Implantology & Prosthodontics', 'Oral & Maxillofacial Surgery', 'Orthodontics', 'Periodontics & Cleaning', 'Professional Teeth Whitening',
+  'Protective & Functional Devices', 'Smile Makeovers', 'Pediatric Dentistry', 'Special Needs & Geriatric',
+]
+
+const details = [
+  { Icon: Phone, label: 'Emergency line', value: PHONE_DISPLAY, href: PHONE_HREF },
+  { Icon: Mail, label: 'Email', value: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
+  { Icon: MapPin, label: 'Address', value: '26 Mackeurtan Avenue, Durban North, 4051', href: DIRECTIONS_HREF },
+  { Icon: Clock, label: 'Availability', value: 'By appointment · 24-hour on-call service', href: PHONE_HREF },
+]
+
+const input = 'w-full h-12 px-4 bg-white border border-hairline text-ink placeholder:text-muted-ink/70 focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 transition-colors'
+const label = 'block text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-ink mb-2'
+
+type Status = 'idle' | 'sending' | 'sent' | 'error'
 
 export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    service: '',
-    date: '',
-    message: '',
-  })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', service: '', date: '', message: '', company: '' })
+  const [status, setStatus] = useState<Status>('idle')
+  const [error, setError] = useState<string | null>(null)
 
-  const services = [
-    'Cosmetic & Aesthetic Dentistry',
-    'Crowns, Bridges & Veneers',
-    'Dental Fillings',
-    'Endodontics (Root Canals)',
-    'Extractions',
-    'Implantology & Prosthodontics',
-    'Oral & Maxillofacial Surgery',
-    'Orthodontics',
-    'Periodontics & Cleaning',
-    'Professional Teeth Whitening',
-    'Protective & Functional Devices',
-    'Smile Makeovers',
-    'Pediatric Dentistry',
-    'Special Needs & Geriatric',
-  ]
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form submitted:', formData)
+    setStatus('sending')
+    setError(null)
+    try {
+      const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(payload.error || 'Something went wrong')
+      setStatus('sent')
+      setForm({ name: '', email: '', phone: '', service: '', date: '', message: '', company: '' })
+    } catch (err) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    }
   }
-
-  const emergencyNumber = '081 207 8621'
-  const emergencyHref = 'tel:0812078621'
-  const whatsappHref = 'https://wa.me/27812078621'
-  const directionsHref = 'https://www.google.com/maps/search/?api=1&query=26+Mackeurtan+Avenue+Durban+North+4051'
-  const contactEmail = 'info@crowndental.com'
-
-  const inputClass = "w-full px-4 py-3.5 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-cyan-400/60 transition-all"
-  const inputStyle = { background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }
 
   return (
-    <main className="overflow-hidden">
-
-      {/* ─── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative min-h-[50vh] flex items-end pb-16 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 overflow-hidden pt-28">
-        <FloatingBlob className="absolute top-10 right-20 w-80 h-80 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
-        <FloatingBlobAlt className="absolute bottom-0 left-10 w-64 h-64 bg-blue-300/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <HeroText>
-<h1 className="text-6xl md:text-7xl font-bold text-white leading-tight">
-              Get In Touch &<br />
-              <span className="gradient-text">Book a Visit</span>
-            </h1>
-            <p className="text-xl text-white/75 mt-4 max-w-xl">
-              Ready to start your smile journey? We'd love to hear from you.
-            </p>
-          </HeroText>
+    <main className="overflow-x-clip bg-cream">
+      {/* Hero (navy band) */}
+      <section className="bg-ink">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-14 sm:pt-40 sm:pb-20 lg:pt-48 lg:pb-24">
+          <FadeUp delay={0}><Eyebrow className="text-teal-light mb-5">Contact · Durban North</Eyebrow></FadeUp>
+          <RevealLines as="h1" className="font-display font-medium text-white text-[40px] sm:text-[56px] lg:text-[72px] leading-[1.02] tracking-tight max-w-[820px]"
+            lines={['Get in touch, or', <><em className="italic font-normal text-[#CFEDED]">book</em> a visit.</>]} />
+          <FadeUp delay={550}><p className="mt-6 max-w-[560px] text-base sm:text-lg leading-relaxed text-white/80">We’d love to hear from you. Send a message below, call, or WhatsApp us — whichever is easiest.</p></FadeUp>
         </div>
       </section>
 
-      {/* ─── CONTACT INFO CARDS ───────────────────────────────────── */}
-      <section className="relative py-12 bg-gradient-to-b from-blue-900 to-blue-800 overflow-hidden">
+      {/* Details strip */}
+      <section className="bg-white border-b border-hairline">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { Icon: Phone, label: 'Emergency Call', value: emergencyNumber, href: emergencyHref, gradient: 'from-blue-400 to-cyan-500' },
-              { Icon: Mail, label: 'Email Us', value: contactEmail, href: `mailto:${contactEmail}`, gradient: 'from-cyan-400 to-teal-500' },
-              { Icon: MapPin, label: 'Get Directions', value: '26 Mackeurtan Avenue', href: directionsHref, gradient: 'from-indigo-400 to-blue-500' },
-              { Icon: Clock, label: 'Availability', value: '24-hour on-call service', href: emergencyHref, gradient: 'from-blue-400 to-indigo-500' },
-            ].map(({ Icon, label, value, href, gradient }, i) => (
-              <StaggerItem key={i}>
-                <a href={href} className="group glass-heavy rounded-2xl p-5 flex flex-col items-center text-center hover:bg-white/25 transition-all hover:-translate-y-1 block">
-                  <div className={`w-11 h-11 bg-gradient-to-br ${gradient} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-1">{label}</p>
-                  <p className="text-white font-bold text-sm">{value}</p>
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {details.map(({ Icon, label: l, value, href }, i) => (
+              <StaggerItem key={l} className={`py-7 ${i < 3 ? 'sm:border-r border-hairline' : ''} ${i % 2 === 0 ? 'sm:pr-6' : 'sm:pl-6'} ${i < 2 ? 'border-b lg:border-b-0' : ''} ${i === 1 ? 'sm:border-r-0 lg:border-r' : ''} ${i === 2 ? 'lg:pl-6' : ''}`}>
+                <a href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noreferrer' : undefined} className="flex items-start gap-3 text-ink hover:text-teal">
+                  <Icon className="w-5 h-5 mt-0.5 text-teal flex-shrink-0" />
+                  <span><span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-ink mb-1">{l}</span><span className="text-[15px] font-semibold">{value}</span></span>
                 </a>
               </StaggerItem>
             ))}
@@ -96,163 +77,69 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* ─── FORM + DETAILS ───────────────────────────────────────── */}
-      <section className="relative py-28 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 overflow-hidden">
-        <FloatingBlob className="absolute top-20 right-10 w-72 h-72 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <FloatingBlobAlt className="absolute bottom-20 left-10 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Form + side */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-28">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+          <FadeInUp className="lg:col-span-7">
+            <Eyebrow>Send a message</Eyebrow>
+            <div className="rule-draw w-14 h-px bg-teal mt-4 mb-6" aria-hidden="true" />
+            <h2 className="font-display font-medium text-ink text-[32px] sm:text-4xl lg:text-[44px] leading-[1.08] mb-3">Tell us how we can help.</h2>
+            <p className="text-[15px] leading-relaxed text-muted-ink mb-8">We reply during practice hours. For pain or an emergency, please call the 24-hour line instead.</p>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-
-            {/* ── Form ── */}
-            <FadeInLeft>
-              <div className="glass-heavy rounded-3xl p-8 md:p-10">
-                <h2 className="text-3xl font-bold text-white mb-2">Send Us a Message</h2>
-                <p className="text-white/60 mb-8">Fill in the form below and we'll get back to you shortly.</p>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-white/80 mb-2">Full Name</label>
-                      <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Your name" className={inputClass} style={inputStyle} required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-white/80 mb-2">Phone Number</label>
-                      <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="081 000 0000" className={inputClass} style={inputStyle} required />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-white/80 mb-2">Email Address</label>
-                    <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="your@email.com" className={inputClass} style={inputStyle} required />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-white/80 mb-2">Service Interested In</label>
-                      <select name="service" value={formData.service} onChange={handleChange} className={`${inputClass} [&>option]:bg-blue-900 [&>option]:text-white`} style={inputStyle} required>
-                        <option value="">Select a service</option>
-                        {services.map((service) => (
-                          <option key={service} value={service}>{service}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-white/80 mb-2">Preferred Date</label>
-                      <input type="date" name="date" value={formData.date} onChange={handleChange} className={`${inputClass} [color-scheme:dark]`} style={inputStyle} required />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-white/80 mb-2">Message</label>
-                    <textarea name="message" value={formData.message} onChange={handleChange} rows={4} placeholder="Tell us about your needs..." className={inputClass} style={inputStyle} required />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-blue-800 hover:shadow-2xl hover:scale-[1.02] transition-all text-lg bg-white"
-                  >
-                    <Send className="w-5 h-5" />
-                    Send Message
-                  </button>
-                </form>
+            {status === 'sent' ? (
+              <div className="bg-white border border-hairline p-8">
+                <p className="font-display font-medium text-ink text-[26px] leading-tight mb-2">Thank you — we’ve received your message.</p>
+                <p className="text-[15px] leading-relaxed text-muted-ink mb-5">We’ll be in touch shortly to confirm a time. If it’s urgent, call {PHONE_DISPLAY}.</p>
+                <button type="button" onClick={() => setStatus('idle')} className="text-sm font-semibold text-teal hover:text-ink">Send another message</button>
               </div>
-            </FadeInLeft>
-
-            {/* ── Contact Details ── */}
-            <FadeInRight>
-              <div className="space-y-6">
-                <div className="glass-heavy rounded-3xl p-8">
-                  <h2 className="text-2xl font-bold text-white mb-6">Practice Details</h2>
-                  <div className="space-y-4">
-                    {[
-                      { Icon: Phone, title: 'Emergency Line', content: <a href={emergencyHref} className="text-cyan-300 font-bold hover:text-cyan-200 transition">{emergencyNumber}</a>, gradient: 'from-blue-400 to-cyan-500' },
-                      { Icon: Mail, title: 'Email', content: <a href={`mailto:${contactEmail}`} className="text-cyan-300 font-bold hover:text-cyan-200 transition break-all">{contactEmail}</a>, gradient: 'from-cyan-400 to-teal-500' },
-                      { Icon: MapPin, title: 'Address', content: <span className="text-white/75">26 Mackeurtan Avenue<br />Durban North, SA, 4051</span>, gradient: 'from-indigo-400 to-blue-500' },
-                      { Icon: Clock, title: 'Availability', content: <span className="text-white/75">Open by appointment<br />24-hour on-call service</span>, gradient: 'from-blue-400 to-indigo-500' },
-                    ].map(({ Icon, title, content, gradient }, i) => (
-                      <div key={i} className="glass rounded-xl p-4 flex gap-4 hover:bg-white/15 transition-all">
-                        <div className={`w-10 h-10 bg-gradient-to-br ${gradient} rounded-xl flex items-center justify-center flex-shrink-0 shadow-md`}>
-                          <Icon className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-white/60 text-xs font-bold uppercase tracking-wider mb-1">{title}</p>
-                          <div className="text-sm">{content}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <a
-                      href={emergencyHref}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-blue-800 transition-all hover:scale-[1.02]"
-                    >
-                      <Phone className="w-4 h-4" />
-                      Call Emergency
-                    </a>
-                    <a
-                      href={whatsappHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-white/15"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp
-                    </a>
-                    <a
-                      href={directionsHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-white/15"
-                    >
-                      <Navigation className="w-4 h-4" />
-                      Get Directions
-                    </a>
-                  </div>
+            ) : (
+              <form onSubmit={onSubmit} className="space-y-5" noValidate>
+                <div className="hidden" aria-hidden="true"><label>Company<input name="company" value={form.company} onChange={onChange} tabIndex={-1} autoComplete="off" /></label></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div><label htmlFor="name" className={label}>Full name</label><input id="name" name="name" value={form.name} onChange={onChange} placeholder="Your name" className={input} required autoComplete="name" /></div>
+                  <div><label htmlFor="phone" className={label}>Phone</label><input id="phone" type="tel" name="phone" value={form.phone} onChange={onChange} placeholder="081 000 0000" className={input} autoComplete="tel" /></div>
                 </div>
-
-                <div className="glass-heavy rounded-3xl p-7">
-                  <p className="text-white font-bold text-lg mb-2">Follow @drfamod</p>
-                  <p className="text-white/60 text-sm mb-4">Find us on TikTok, Facebook, Instagram, Twitter, and LinkedIn.</p>
-                  <div className="flex flex-wrap gap-2">
-                    {['TikTok', 'Facebook', 'Instagram', 'Twitter', 'LinkedIn'].map((platform) => (
-                      <span key={platform} className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white">
-                        {platform}: @drfamod
-                      </span>
-                    ))}
-                  </div>
+                <div><label htmlFor="email" className={label}>Email</label><input id="email" type="email" name="email" value={form.email} onChange={onChange} placeholder="you@example.com" className={input} autoComplete="email" /></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div><label htmlFor="service" className={label}>Treatment you’re interested in</label>
+                    <select id="service" name="service" value={form.service} onChange={onChange} className={input}>
+                      <option value="">Not sure yet</option>
+                      {services.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select></div>
+                  <div><label htmlFor="date" className={label}>Preferred date</label><input id="date" type="date" name="date" value={form.date} onChange={onChange} className={input} /></div>
                 </div>
+                <div><label htmlFor="message" className={label}>Message</label><textarea id="message" name="message" value={form.message} onChange={onChange} rows={5} placeholder="Tell us what you need…" className={`${input} h-auto py-3`} required /></div>
+                {error && <p className="text-sm text-red-700">{error}</p>}
+                <button type="submit" disabled={status === 'sending'} className={`${btn.navy} w-full sm:w-auto disabled:opacity-60`}>
+                  {status === 'sending' ? 'Sending…' : 'Send message'}
+                </button>
+              </form>
+            )}
+          </FadeInUp>
 
-                {/* Map */}
-                <a
-                  href={directionsHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="relative block h-52 rounded-3xl overflow-hidden glass-heavy"
-                  style={{ border: '1px solid rgba(255,255,255,0.2)' }}
-                >
-                  <Image src="/contact-map.jpg" alt="Office location" fill className="object-cover opacity-70" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 to-transparent" />
-                  <div className="absolute bottom-5 left-5 glass rounded-xl px-4 py-2">
-                    <p className="text-white font-bold text-sm">26 Mackeurtan Avenue</p>
-                    <p className="text-white/70 text-xs">Durban North, SA 4051</p>
-                    <p className="mt-1 text-cyan-300 text-xs font-semibold">Tap for directions</p>
-                  </div>
-                </a>
-
-                {/* Patient Login */}
-                <div className="glass-heavy rounded-3xl p-7 text-center">
-                  <p className="text-white font-bold text-lg mb-2">Existing Patient?</p>
-                  <p className="text-white/60 text-sm mb-4">Log in to manage your appointments and records.</p>
-                  <Link href="/auth/login" className="inline-flex items-center gap-2 text-cyan-300 font-bold hover:text-cyan-200 transition group">
-                    Patient Login
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
+          <FadeInUp delay={0.15} className="lg:col-span-5 space-y-5">
+            <div className="bg-ink text-white p-7 sm:p-8">
+              <h3 className="font-display font-medium text-[28px] leading-tight mb-2">Prefer to talk?</h3>
+              <p className="text-sm leading-relaxed text-white/75 mb-6">Call, WhatsApp, or come and see us on Mackeurtan Avenue.</p>
+              <div className="flex flex-col gap-3">
+                <a href={PHONE_HREF} className={`${btn.light} w-full`}><Phone className="w-[18px] h-[18px]" /> Call {PHONE_DISPLAY}</a>
+                <a href={WHATSAPP_HREF} target="_blank" rel="noreferrer" className={`${btn.ghostOnDark} w-full`}><MessageCircle className="w-[18px] h-[18px]" /> WhatsApp us</a>
+                <a href={DIRECTIONS_HREF} target="_blank" rel="noreferrer" className={`${btn.ghostOnDark} w-full`}><Navigation className="w-[18px] h-[18px]" /> Get directions</a>
               </div>
-            </FadeInRight>
-          </div>
+            </div>
+            <a href={DIRECTIONS_HREF} target="_blank" rel="noreferrer" className="group relative block h-56 sm:h-64 overflow-hidden bg-hairline">
+              <Image src="/contact-map.jpg" alt="Map to 26 Mackeurtan Avenue, Durban North" fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]" />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent p-5">
+                <p className="text-white font-semibold text-sm">26 Mackeurtan Avenue, Durban North</p>
+                <p className="text-teal-light text-xs font-semibold mt-0.5">Tap for directions</p>
+              </div>
+            </a>
+            <div className="bg-white border border-hairline p-7">
+              <p className="font-display font-medium text-ink text-[22px] leading-tight mb-1">Follow @drfamod</p>
+              <p className="text-sm text-muted-ink mb-4">TikTok, Facebook, Instagram, X and LinkedIn.</p>
+              <p className="text-sm text-muted-ink">Existing patient? <Link href="/auth/login" className="group inline-flex items-center gap-1.5 font-semibold text-ink hover:text-teal">Patient login <Arrow className="w-4 h-4" /></Link></p>
+            </div>
+          </FadeInUp>
         </div>
       </section>
     </main>

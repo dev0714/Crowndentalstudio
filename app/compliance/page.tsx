@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { formatDateSA } from '@/lib/sa-formatting';
 import { OperationsRiskStrip } from '@/components/operations-risk-strip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 
 type ComplianceSummary = {
   communication_consents: number;
@@ -67,6 +70,11 @@ function CompliancePageContent() {
   const [signedConsents, setSignedConsents] = useState<SignedConsent[]>([]);
   const [documents, setDocuments] = useState<PatientDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'matrix' | 'signed' | 'documents'>('dashboard');
+  const [pageState, setPageState] = useState<Record<string, { page: number; size: number }>>({});
+  const pagingFor = (key: string) => pageState[key] || { page: 1, size: 10 };
+  const setPageFor = (key: string, page: number) => setPageState((current) => ({ ...current, [key]: { ...pagingFor(key), page } }));
+  const setSizeFor = (key: string, size: number) => setPageState((current) => ({ ...current, [key]: { page: 1, size } }));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -99,6 +107,30 @@ function CompliancePageContent() {
   const chipClass = (value: boolean) =>
     value ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500';
 
+  const paged = <T,>(key: string, rows: T[]) => {
+    const { page, size } = pagingFor(key);
+    const { pageCount } = describeRange(page, size, rows.length);
+    return sliceForPage<T>(rows, Math.min(page, pageCount), size);
+  };
+  const pagedMatrix = paged('matrix', communicationConsents);
+  const pagedSigned = paged('signed', signedConsents);
+  const pagedDocuments = paged('documents', documents);
+  const footer = (key: string, count: number, noun: string) => {
+    const { page, size } = pagingFor(key);
+    const { pageCount } = describeRange(page, size, count);
+    return (
+      <PaginationFooter
+        page={Math.min(page, pageCount)}
+        pageSize={size}
+        count={count}
+        onPageChange={(next) => setPageFor(key, next)}
+        onPageSizeChange={(next) => setSizeFor(key, next)}
+        noun={noun}
+        className="-mx-6 -mb-6 mt-3"
+      />
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
@@ -118,6 +150,27 @@ function CompliancePageContent() {
           </div>
         )}
 
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+          <TabsList className="h-auto flex-wrap justify-start bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+            <TabsTrigger value="dashboard" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Dashboard
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : ''}</span>
+            </TabsTrigger>
+            <TabsTrigger value="matrix" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Consent matrix
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : communicationConsents.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="signed" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Signed consents
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : signedConsents.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Document vault
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : documents.length}</span>
+            </TabsTrigger>
+          </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Communication Consents', value: summary?.communication_consents ?? 0, gradient: 'from-navy-800 to-ink' },
@@ -137,9 +190,9 @@ function CompliancePageContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { label: 'Patient Signed', value: summary?.patient_signed ?? 0, gradient: 'from-emerald-600 to-green-500' },
-            { label: 'Guardian Signed', value: summary?.guardian_signed ?? 0, gradient: 'from-blue-600 to-indigo-500' },
-            { label: 'POPIA Confirmed', value: summary?.popia_confirmed ?? 0, gradient: 'from-amber-500 to-orange-400' },
+            { label: 'Patient Signed', value: summary?.patient_signed ?? 0, gradient: 'from-teal to-[#0b6f71]' },
+            { label: 'Guardian Signed', value: summary?.guardian_signed ?? 0, gradient: 'from-[#3f4c7a] to-[#2c365c]' },
+            { label: 'POPIA Confirmed', value: summary?.popia_confirmed ?? 0, gradient: 'from-[#b8742e] to-[#8f5a22]' },
           ].map((card) => (
             <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
               <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -149,6 +202,9 @@ function CompliancePageContent() {
           ))}
         </div>
 
+        </TabsContent>
+
+        <TabsContent value="matrix">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Communication Consent Matrix</CardTitle>
@@ -173,7 +229,7 @@ function CompliancePageContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {communicationConsents.map((row) => (
+                    {pagedMatrix.map((row) => (
                       <tr key={row.id} className="border-b border-slate-200">
                         <td className="py-3 px-4 font-medium text-slate-900">
                           <Link href={`/patients/${row.patient_id}`} className="hover:underline">
@@ -203,9 +259,12 @@ function CompliancePageContent() {
             ) : (
               <p className="text-slate-600 py-8 text-center">No communication consents recorded</p>
             )}
+            {!loading && communicationConsents.length > 0 && footer('matrix', communicationConsents.length, 'patients')}
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="signed">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Signed Consent Records</CardTitle>
@@ -216,7 +275,7 @@ function CompliancePageContent() {
               <p className="text-slate-600 py-8 text-center">Loading signed consents...</p>
             ) : signedConsents.length > 0 ? (
               <div className="space-y-3">
-                {signedConsents.map((row) => (
+                {pagedSigned.map((row) => (
                   <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -248,9 +307,12 @@ function CompliancePageContent() {
             ) : (
               <p className="text-slate-600 py-8 text-center">No signed consent records found</p>
             )}
+            {!loading && signedConsents.length > 0 && footer('signed', signedConsents.length, 'records')}
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="documents">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Document Vault</CardTitle>
@@ -261,7 +323,7 @@ function CompliancePageContent() {
               <p className="text-slate-600 py-8 text-center">Loading document vault...</p>
             ) : documents.length > 0 ? (
               <div className="space-y-3">
-                {documents.map((row) => (
+                {pagedDocuments.map((row) => (
                   <div key={row.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
@@ -290,8 +352,11 @@ function CompliancePageContent() {
             ) : (
               <p className="text-slate-600 py-8 text-center">No generated documents yet</p>
             )}
+            {!loading && documents.length > 0 && footer('documents', documents.length, 'documents')}
           </CardContent>
         </Card>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

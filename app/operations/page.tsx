@@ -9,6 +9,9 @@ import { formatDateSA, formatZAR } from '@/lib/sa-formatting';
 import { toCsv } from '@/lib/operations/register-export';
 import { PORTAL_NAV_ITEMS } from '@/lib/auth/portal-navigation';
 import { RISK_SEVERITY } from '@/lib/workflows/status-definitions';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 
 type PublicUser = {
   id: string;
@@ -66,6 +69,11 @@ function OperationsPageContent() {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [payload, setPayload] = useState<OperationsPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'registers' | 'timeline' | 'risks'>('dashboard');
+  const [pageState, setPageState] = useState<Record<string, { page: number; size: number }>>({});
+  const pagingFor = (key: string) => pageState[key] || { page: 1, size: 10 };
+  const setPageFor = (key: string, page: number) => setPageState((current) => ({ ...current, [key]: { ...pagingFor(key), page } }));
+  const setSizeFor = (key: string, size: number) => setPageState((current) => ({ ...current, [key]: { page: 1, size } }));
   const [error, setError] = useState<string | null>(null);
   const [activeRegister, setActiveRegister] = useState<keyof OperationsPayload['registers']>('leads');
   const [search, setSearch] = useState('');
@@ -148,6 +156,31 @@ function OperationsPageContent() {
             { title: 'Low Stock', value: String(riskCounts.lowStockCount || 0), note: 'Inventory risk' },
           ];
 
+  const paged = <T,>(key: string, rows: T[]) => {
+    const { page, size } = pagingFor(key);
+    const { pageCount } = describeRange(page, size, rows.length);
+    return sliceForPage<T>(rows, Math.min(page, pageCount), size);
+  };
+  const timelineEntries = payload?.patientTimeline || [];
+  const pagedRows = paged('registers', filteredRows);
+  const pagedTimeline = paged('timeline', timelineEntries);
+  const pagedRisks = paged('risks', risks);
+  const footer = (key: string, count: number, noun: string) => {
+    const { page, size } = pagingFor(key);
+    const { pageCount } = describeRange(page, size, count);
+    return (
+      <PaginationFooter
+        page={Math.min(page, pageCount)}
+        pageSize={size}
+        count={count}
+        onPageChange={(next) => setPageFor(key, next)}
+        onPageSizeChange={(next) => setSizeFor(key, next)}
+        noun={noun}
+        className="-mx-6 -mb-6 mt-3"
+      />
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
@@ -169,11 +202,32 @@ function OperationsPageContent() {
           </div>
         )}
 
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+          <TabsList className="h-auto flex-wrap justify-start bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+            <TabsTrigger value="dashboard" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Dashboard
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : ''}</span>
+            </TabsTrigger>
+            <TabsTrigger value="registers" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Registers
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : filteredRows.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Audit timeline
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : timelineEntries.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="risks" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Risk signals
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : risks.length}</span>
+            </TabsTrigger>
+          </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Total Patients', value: loading ? '-' : String(summary?.totalPatients ?? 0), note: `Active ${summary?.activePatients ?? 0}`, gradient: 'from-navy-800 to-ink' },
             { label: 'Open Work', value: loading ? '-' : String((summary?.openLabCases || 0) + (summary?.openLeads || 0)), note: 'Leads + lab cases', gradient: 'from-[#3f4c7a] to-[#2c365c]' },
-            { label: 'Outstanding Balance', value: loading ? '-' : formatZAR(summary?.outstandingBalance || 0), note: 'Accounts exposure', gradient: 'from-rose-600 to-pink-500' },
+            { label: 'Outstanding Balance', value: loading ? '-' : formatZAR(summary?.outstandingBalance || 0), note: 'Accounts exposure', gradient: 'from-[#9f2f2f] to-[#6f1d1d]' },
             { label: 'Risk Signals', value: loading ? '-' : String(risks.length), note: 'Actionable exceptions', gradient: 'from-[#b8742e] to-[#8f5a22]' },
           ].map((card) => (
             <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
@@ -187,7 +241,7 @@ function OperationsPageContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {rolePanels.map((panel, i) => {
-            const gradients = ['from-teal to-[#0b6f71]','from-cyan-600 to-blue-500','from-[#4b5563] to-[#1f2937]'];
+            const gradients = ['from-teal to-[#0b6f71]','from-[#3f4c7a] to-[#2c365c]','from-[#5b6b7f] to-[#3b4653]'];
             return (
               <div key={panel.title} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 3]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : panel.value}</p>
@@ -199,6 +253,9 @@ function OperationsPageContent() {
           })}
         </div>
 
+        </TabsContent>
+
+        <TabsContent value="registers">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -246,7 +303,7 @@ function OperationsPageContent() {
                 </thead>
                 <tbody>
                   {filteredRows.length > 0 ? (
-                    filteredRows.map((row) => (
+                    pagedRows.map((row) => (
                       <tr key={row.id} className="border-b border-slate-100 hover:bg-cream/40 transition-colors">
                         <td className="py-3 px-4 text-slate-900 font-medium">{row.label}</td>
                         <td className="py-3 px-4 text-slate-600">{row.patient_name || row.patient_id || '-'}</td>
@@ -265,75 +322,82 @@ function OperationsPageContent() {
                 </tbody>
               </table>
             </div>
+            {!loading && filteredRows.length > 0 && footer('registers', filteredRows.length, 'rows')}
           </CardContent>
         </Card>
+        </TabsContent>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-              <CardTitle className="text-base">Patient Audit Timeline</CardTitle>
-              <CardDescription className="text-xs">Most recent operational events</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-slate-600 py-6 text-center">Loading timeline...</p>
-              ) : payload?.patientTimeline?.length ? (
-                <div className="space-y-3">
-                  {payload.patientTimeline.slice(0, 8).map((entry) => (
-                    <div key={entry.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-medium text-slate-900">{entry.label}</p>
-                          <p className="text-sm text-slate-600">{entry.description || entry.source || 'Timeline event'}</p>
-                          {entry.patient_name && <p className="text-xs text-slate-500 mt-1">{entry.patient_name}</p>}
-                        </div>
-                        <span className="text-xs text-slate-500">{formatDateSA(entry.event_at)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-600 py-6 text-center">No timeline events available</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-              <CardTitle className="text-base">Risk Signals</CardTitle>
-              <CardDescription className="text-xs">Operational exceptions needing attention</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-slate-600 py-6 text-center">Loading risks...</p>
-              ) : risks.length ? (
-                <div className="space-y-3">
-                  {risks.map((risk) => (
-                    <div key={risk.key} className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+        <TabsContent value="timeline">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <CardTitle className="text-base">Patient Audit Timeline</CardTitle>
+            <CardDescription className="text-xs">Most recent operational events</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-slate-600 py-6 text-center">Loading timeline...</p>
+            ) : payload?.patientTimeline?.length ? (
+              <div className="space-y-3">
+                {pagedTimeline.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-medium text-slate-900">{risk.label}</p>
-                        <p className="text-xs text-slate-500 mt-1">{risk.key}</p>
+                        <p className="font-medium text-slate-900">{entry.label}</p>
+                        <p className="text-sm text-slate-600">{entry.description || entry.source || 'Timeline event'}</p>
+                        {entry.patient_name && <p className="text-xs text-slate-500 mt-1">{entry.patient_name}</p>}
                       </div>
-                      <span
-                        className={`text-xs font-semibold px-2 py-1 rounded ${
-                          risk.severity === RISK_SEVERITY.HIGH
-                            ? 'bg-red-100 text-red-700'
-                            : risk.severity === RISK_SEVERITY.MEDIUM
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        {risk.severity}
-                      </span>
+                      <span className="text-xs text-slate-500">{formatDateSA(entry.event_at)}</span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-slate-600 py-6 text-center">No active risk signals</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-slate-600 py-6 text-center">No timeline events available</p>
+            )}
+            {!loading && timelineEntries.length > 0 && footer('timeline', timelineEntries.length, 'events')}
+          </CardContent>
+        </Card>
+        </TabsContent>
+
+        <TabsContent value="risks">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <CardTitle className="text-base">Risk Signals</CardTitle>
+            <CardDescription className="text-xs">Operational exceptions needing attention</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-slate-600 py-6 text-center">Loading risks...</p>
+            ) : risks.length ? (
+              <div className="space-y-3">
+                {pagedRisks.map((risk) => (
+                  <div key={risk.key} className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+                    <div>
+                      <p className="font-medium text-slate-900">{risk.label}</p>
+                      <p className="text-xs text-slate-500 mt-1">{risk.key}</p>
+                    </div>
+                    <span
+                      className={`text-xs font-semibold px-2 py-1 rounded ${
+                        risk.severity === RISK_SEVERITY.HIGH
+                          ? 'bg-red-100 text-red-700'
+                          : risk.severity === RISK_SEVERITY.MEDIUM
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {risk.severity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-slate-600 py-6 text-center">No active risk signals</p>
+            )}
+            {!loading && risks.length > 0 && footer('risks', risks.length, 'signals')}
+          </CardContent>
+        </Card>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FileImage, FileText, Eye, ExternalLink, Plus, RefreshCcw, Trash2, Upload } from 'lucide-react';
 import type { BlogPost } from '@/lib/blog/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 
 type BlogFormState = {
   title: string;
@@ -42,6 +45,9 @@ function BlogsContent() {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [form, setForm] = useState<BlogFormState>(EMPTY_FORM);
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'posts' | 'editor'>('posts');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
@@ -53,6 +59,13 @@ function BlogsContent() {
 
   const filteredPosts = useMemo(() => {
     const query = search.toLowerCase().trim();
+  const { pageCount } = describeRange(page, pageSize, filteredPosts.length);
+  const currentPage = Math.min(page, pageCount);
+  const pagedPosts = sliceForPage<BlogPost>(filteredPosts, currentPage, pageSize);
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+  };
     if (!query) return posts;
     return posts.filter((post) =>
       `${post.title} ${post.category} ${post.slug}`.toLowerCase().includes(query)
@@ -87,6 +100,7 @@ function BlogsContent() {
   };
 
   const handleSelectPost = (post: BlogPost) => {
+    setActiveTab('editor');
     setSelectedPostId(post.id);
     setForm(toFormState(post));
     setCoverImageUrl(post.cover_image);
@@ -96,6 +110,7 @@ function BlogsContent() {
   };
 
   const handleNewPost = () => {
+    setActiveTab('editor');
     setSelectedPostId(null);
     setForm(EMPTY_FORM);
     setImagePreview(null);
@@ -262,261 +277,289 @@ function BlogsContent() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-[360px,1fr] gap-5">
-          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-              <CardTitle className="text-base">Posts</CardTitle>
-              <CardDescription className="text-xs">
-                Pick a post to edit, or create a new one.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 space-y-3">
-              <Input
-                placeholder="Search posts..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="rounded-xl border-slate-200"
-              />
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'posts' | 'editor')}>
+          <TabsList className="h-auto bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+            <TabsTrigger value="posts" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Posts
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : posts.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="editor" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              {selectedPost ? 'Edit post' : 'New post'}
+            </TabsTrigger>
+          </TabsList>
 
-              {loading ? (
-                <div className="py-8 text-center text-sm text-slate-500">Loading posts...</div>
-              ) : filteredPosts.length === 0 ? (
-                <div className="py-8 text-center text-sm text-slate-500">No posts found.</div>
-              ) : (
-                <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                  {filteredPosts.map((post) => {
-                    const isActive = post.id === selectedPostId;
-                    return (
-                      <div
-                        key={post.id}
-                        className={`rounded-2xl border transition-all ${
-                          isActive
-                            ? 'border-cyan-400 bg-cyan-50 shadow-sm'
-                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleSelectPost(post)}
-                          className="w-full text-left p-3"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-semibold text-slate-900 truncate">{post.title}</p>
-                              <p className="text-xs text-slate-500 truncate mt-1">
-                                {post.excerpt || 'No summary yet'}
-                              </p>
-                            </div>
-                            <span
-                              className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
-                                post.is_published
-                                  ? 'bg-emerald-100 text-emerald-700'
-                                  : 'bg-amber-100 text-amber-700'
-                              }`}
-                            >
-                              {post.is_published ? 'Published' : 'Draft'}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
-                            <span>{post.is_published ? 'Visible on website' : 'Hidden from website'}</span>
-                            <span>
-                              {new Date(post.published_at || post.updated_at).toLocaleDateString('en-ZA')}
-                            </span>
-                          </div>
-                        </button>
+        <TabsContent value="posts">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <CardTitle className="text-base">Posts</CardTitle>
+            <CardDescription className="text-xs">
+              Pick a post to edit, or create a new one.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            <Input
+              placeholder="Search posts..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="rounded-xl border-slate-200"
+            />
 
-                        <div className="flex items-center gap-2 px-3 pb-3">
-                          <Button variant="outline" size="sm" asChild className="h-8 rounded-xl">
-                            <Link href={`/blog/${post.slug}`} target="_blank" rel="noreferrer">
-                              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                              View
-                            </Link>
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-8 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
-                            onClick={() => handleDelete(post)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-navy-800 flex items-center justify-center shadow-sm">
-                  <FileText className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">
-                    {selectedPost ? 'Edit Blog Post' : 'Create Blog Post'}
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    The website updates automatically. The link slug is created from the title for you.
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 space-y-4">
+            {loading ? (
+              <div className="py-8 text-center text-sm text-slate-500">Loading posts...</div>
+            ) : filteredPosts.length === 0 ? (
+              <div className="py-8 text-center text-sm text-slate-500">No posts found.</div>
+            ) : (
               <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Title
-                </label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => handleFieldChange('title', e.target.value)}
-                  placeholder="Article title"
-                  className="rounded-xl border-slate-200"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Short Summary
-                </label>
-                <Textarea
-                  value={form.excerpt}
-                  onChange={(e) => handleFieldChange('excerpt', e.target.value)}
-                  placeholder="A short summary that appears on the website blog page"
-                  className="min-h-24 rounded-xl border-slate-200"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Main Content
-                </label>
-                <Textarea
-                  value={form.content}
-                  onChange={(e) => handleFieldChange('content', e.target.value)}
-                  placeholder="Write the full blog post here..."
-                  className="min-h-[380px] rounded-xl border-slate-200"
-                />
-                <p className="text-xs text-slate-500">
-                  Keep a blank line between paragraphs. If needed, lines starting with `1.` become numbered
-                  lists, `-` becomes bullets, and headings can be wrapped in `**double asterisks**`.
-                </p>
-              </div>
-
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Blog Picture</p>
-                    <p className="text-xs text-slate-500">Upload an image to the Supabase bucket.</p>
-                  </div>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          void handleImageUpload(file);
-                        }
-                        e.currentTarget.value = '';
-                      }}
-                    />
-                    <span className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50">
-                      <Upload className="w-4 h-4" />
-                      {uploadingImage ? 'Uploading...' : 'Upload Picture'}
-                    </span>
-                  </label>
-                </div>
-
-                {(imagePreview || coverImageUrl) ? (
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                    <div className="relative aspect-[16/9] bg-slate-100">
-                      <img
-                        src={imagePreview || coverImageUrl}
-                        alt="Blog cover preview"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs text-slate-600">
-                      <span className="flex items-center gap-2 truncate">
-                        <FileImage className="w-4 h-4" />
-                        {imageFileName || 'Uploaded image'}
-                      </span>
+                {pagedPosts.map((post) => {
+                  const isActive = post.id === selectedPostId;
+                  return (
+                    <div
+                      key={post.id}
+                      className={`rounded-2xl border transition-all ${
+                        isActive
+                          ? 'border-cyan-400 bg-cyan-50 shadow-sm'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
                       <button
                         type="button"
-                        onClick={() => {
-                          setImagePreview(null);
-                          setImageFileName(null);
-                          setCoverImageUrl('');
-                        }}
-                        className="font-semibold text-teal hover:text-ink"
+                        onClick={() => handleSelectPost(post)}
+                        className="w-full text-left p-3"
                       >
-                        Remove
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900 truncate">{post.title}</p>
+                            <p className="text-xs text-slate-500 truncate mt-1">
+                              {post.excerpt || 'No summary yet'}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
+                              post.is_published
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}
+                          >
+                            {post.is_published ? 'Published' : 'Draft'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-3 text-xs text-slate-500">
+                          <span>{post.is_published ? 'Visible on website' : 'Hidden from website'}</span>
+                          <span>
+                            {new Date(post.published_at || post.updated_at).toLocaleDateString('en-ZA')}
+                          </span>
+                        </div>
                       </button>
+
+                      <div className="flex items-center gap-2 px-3 pb-3">
+                        <Button variant="outline" size="sm" asChild className="h-8 rounded-xl">
+                          <Link href={`/blog/${post.slug}`} target="_blank" rel="noreferrer">
+                            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                            View
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
+                          onClick={() => handleDelete(post)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
-                    <p className="text-sm font-medium text-slate-700">No image uploaded yet</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Upload a picture and it will be saved in the Supabase bucket.
-                    </p>
-                  </div>
-                )}
-                <p className="text-xs text-slate-500 break-all">
-                  {coverImageUrl ? coverImageUrl : 'No image URL yet'}
-                </p>
+                  );
+                })}
+              </div>
+            )}
+            {!loading && filteredPosts.length > 0 && (
+              <PaginationFooter
+                page={currentPage}
+                pageSize={pageSize}
+                count={filteredPosts.length}
+                onPageChange={setPage}
+                onPageSizeChange={changePageSize}
+                noun="posts"
+                className="-mx-4 -mb-4 mt-2"
+              />
+            )}
+          </CardContent>
+        </Card>
+        </TabsContent>
+
+        <TabsContent value="editor">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-navy-800 flex items-center justify-center shadow-sm">
+                <FileText className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-base">
+                  {selectedPost ? 'Edit Blog Post' : 'Create Blog Post'}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  The website updates automatically. The link slug is created from the title for you.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Title
+              </label>
+              <Input
+                value={form.title}
+                onChange={(e) => handleFieldChange('title', e.target.value)}
+                placeholder="Article title"
+                className="rounded-xl border-slate-200"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Short Summary
+              </label>
+              <Textarea
+                value={form.excerpt}
+                onChange={(e) => handleFieldChange('excerpt', e.target.value)}
+                placeholder="A short summary that appears on the website blog page"
+                className="min-h-24 rounded-xl border-slate-200"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Main Content
+              </label>
+              <Textarea
+                value={form.content}
+                onChange={(e) => handleFieldChange('content', e.target.value)}
+                placeholder="Write the full blog post here..."
+                className="min-h-[380px] rounded-xl border-slate-200"
+              />
+              <p className="text-xs text-slate-500">
+                Keep a blank line between paragraphs. If needed, lines starting with `1.` become numbered
+                lists, `-` becomes bullets, and headings can be wrapped in `**double asterisks**`.
+              </p>
+            </div>
+
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Blog Picture</p>
+                  <p className="text-xs text-slate-500">Upload an image to the Supabase bucket.</p>
+                </div>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        void handleImageUpload(file);
+                      }
+                      e.currentTarget.value = '';
+                    }}
+                  />
+                  <span className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50">
+                    <Upload className="w-4 h-4" />
+                    {uploadingImage ? 'Uploading...' : 'Upload Picture'}
+                  </span>
+                </label>
               </div>
 
-              <label className="flex items-center gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/70">
-                <input
-                  type="checkbox"
-                  checked={form.is_published}
-                  onChange={(e) => handleFieldChange('is_published', e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-teal focus:ring-teal"
-                />
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Published on website</p>
-                  <p className="text-xs text-slate-500">
-                    Turn this off to keep the article saved in CRM but hidden from the public site.
+              {(imagePreview || coverImageUrl) ? (
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  <div className="relative aspect-[16/9] bg-slate-100">
+                    <img
+                      src={imagePreview || coverImageUrl}
+                      alt="Blog cover preview"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 text-xs text-slate-600">
+                    <span className="flex items-center gap-2 truncate">
+                      <FileImage className="w-4 h-4" />
+                      {imageFileName || 'Uploaded image'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setImageFileName(null);
+                        setCoverImageUrl('');
+                      }}
+                      className="font-semibold text-teal hover:text-ink"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
+                  <p className="text-sm font-medium text-slate-700">No image uploaded yet</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Upload a picture and it will be saved in the Supabase bucket.
                   </p>
                 </div>
-              </label>
+              )}
+              <p className="text-xs text-slate-500 break-all">
+                {coverImageUrl ? coverImageUrl : 'No image URL yet'}
+              </p>
+            </div>
 
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Button
-                  onClick={handleSave}
-                  disabled={saving || uploadingImage}
-                  className="bg-navy-800 hover:bg-ink border-0 shadow-md"
-                >
-                  {saving ? 'Saving...' : selectedPost ? 'Save Changes' : 'Create Post'}
-                </Button>
-                {selectedPost && (
-                  <Button variant="outline" asChild disabled={saving || uploadingImage}>
-                    <Link href={`/blog/${selectedPost.slug}`} target="_blank" rel="noreferrer">
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Post
-                    </Link>
-                  </Button>
-                )}
-                {selectedPost && (
-                  <Button
-                    onClick={() => handleDelete(selectedPost)}
-                    disabled={saving || uploadingImage}
-                    className="bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Post
-                  </Button>
-                )}
+            <label className="flex items-center gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/70">
+              <input
+                type="checkbox"
+                checked={form.is_published}
+                onChange={(e) => handleFieldChange('is_published', e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-teal focus:ring-teal"
+              />
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Published on website</p>
+                <p className="text-xs text-slate-500">
+                  Turn this off to keep the article saved in CRM but hidden from the public site.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </label>
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Button
+                onClick={handleSave}
+                disabled={saving || uploadingImage}
+                className="bg-navy-800 hover:bg-ink border-0 shadow-md"
+              >
+                {saving ? 'Saving...' : selectedPost ? 'Save Changes' : 'Create Post'}
+              </Button>
+              {selectedPost && (
+                <Button variant="outline" asChild disabled={saving || uploadingImage}>
+                  <Link href={`/blog/${selectedPost.slug}`} target="_blank" rel="noreferrer">
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Post
+                  </Link>
+                </Button>
+              )}
+              {selectedPost && (
+                <Button
+                  onClick={() => handleDelete(selectedPost)}
+                  disabled={saving || uploadingImage}
+                  className="bg-red-600 text-white hover:bg-red-700 border border-red-700 shadow-sm"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Post
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

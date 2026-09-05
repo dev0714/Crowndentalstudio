@@ -3,22 +3,78 @@
 @theme {
   --color-primary: #2563eb;
   --color-primary-dark: #1d4ed8;
+  --color-primary-foreground: #ffffff;
   --color-secondary: #06b6d4;
+  --color-secondary-foreground: #ffffff;
   --color-accent: #3b82f6;
+  --color-accent-foreground: #ffffff;
   --color-background: #ffffff;
   --color-foreground: #0f172a;
   --color-muted: #64748b;
   --color-muted-foreground: #64748b;
   --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #2563eb;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
   --color-success: #22c55e;
   --color-error: #ef4444;
   --color-warning: #fb923c;
-  
+  --color-chart-1: #f97316;
+  --color-chart-2: #0d9488;
+  --color-chart-3: #1e3a8a;
+  --color-chart-4: #eab308;
+  --color-chart-5: #f59e0b;
+  --color-sidebar: #fafafa;
+  --color-sidebar-foreground: #0f172a;
+  --color-sidebar-primary: #0f172a;
+  --color-sidebar-primary-foreground: #fafafa;
+  --color-sidebar-accent: #f4f4f5;
+  --color-sidebar-accent-foreground: #0f172a;
+  --color-sidebar-border: #e4e4e7;
+  --color-sidebar-ring: #a1a1aa;
+
+  /* Public website ("Clinical Luxe") palette */
+  --color-cream: #f7f4ef;
+  --color-ink: #0b1f3a;
+  --color-navy-800: #12305a;
+  --color-muted-ink: #5b6b7f;
+  --color-hairline: #e6e1d8;
+  --color-teal: #0f8b8d;
+  --color-teal-soft: #e3f1f1;
+  --color-teal-light: #9fd6d7;
+
   --font-sans: 'system-ui', 'Segoe UI', 'Roboto', sans-serif;
+
   --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --font-display: var(--font-cormorant), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
   body {
     @apply bg-white text-slate-900;
   }
@@ -67,5 +123,94 @@
 
   .badge-error {
     @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Cinematic motion system for the public website (dependency-free).
+   JS decides *when* (IntersectionObserver / mount); CSS decides *how*.
+   ------------------------------------------------------------------ */
+@keyframes ken-burns {
+  from { transform: scale(1) translate(0, 0); }
+  to   { transform: scale(1.08) translate(-1.5%, -1%); }
+}
+@keyframes reveal-up {
+  from { transform: translateY(110%); }
+  to   { transform: translateY(0); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes line-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+@keyframes parallax-y {
+  from { transform: translateY(6%); }
+  to   { transform: translateY(-6%); }
+}
+@keyframes quote-fade {
+  to { opacity: 0.15; transform: translateY(-4%); }
+}
+
+.ken-burns {
+  animation: ken-burns 16s var(--ease-out-expo) both;
+  will-change: transform;
+}
+
+/* Headline lines rise out of an invisible mask, one after another. */
+.reveal-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.reveal-line {
+  display: block;
+  animation: reveal-up 1s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 130ms + var(--d, 0ms));
+}
+
+/* Mount-time fade for hero copy and buttons; --d sets the delay. */
+.fade-up {
+  animation: fade-up 0.9s var(--ease-out-expo) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Hairline that draws itself in. */
+.rule-draw {
+  transform-origin: left;
+  animation: line-draw 1s var(--ease-out-expo) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Scroll-scrubbed depth where the browser supports it; static elsewhere. */
+.parallax > * {
+  will-change: transform;
+}
+@supports (animation-timeline: view()) {
+  .parallax > * {
+    animation: parallax-y linear both;
+    animation-timeline: view();
+    animation-range: entry 0% exit 100%;
+  }
+  .quote-pin {
+    animation: quote-fade linear both;
+    animation-timeline: view();
+    animation-range: exit 0% exit 70%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ken-burns,
+  .reveal-line,
+  .fade-up,
+  .rule-draw,
+  .parallax > *,
+  .quote-pin {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
   }
 }

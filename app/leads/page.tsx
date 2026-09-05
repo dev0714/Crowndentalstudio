@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +27,8 @@ function LeadsContent() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     const fetchLeads = async () => {
@@ -75,6 +79,14 @@ function LeadsContent() {
       'Direct Call': 'bg-purple-50 text-purple-700',
     };
     return colors[source] || 'bg-slate-50 text-slate-700';
+  };
+
+  const { pageCount } = describeRange(page, pageSize, leads.length);
+  const currentPage = Math.min(page, pageCount);
+  const visibleLeads = sliceForPage<Lead>(leads, currentPage, pageSize);
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setPage(1);
   };
 
   const stats = [
@@ -149,7 +161,7 @@ function LeadsContent() {
                   </thead>
                   <tbody>
                     {leads.length > 0 ? (
-                      leads.map((lead) => (
+                      visibleLeads.map((lead) => (
                         <tr key={lead.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                           <td className="py-3 px-4 font-medium text-slate-900">
                             {lead.first_name} {lead.last_name}
@@ -183,6 +195,15 @@ function LeadsContent() {
                     )}
                   </tbody>
                 </table>
+                <PaginationFooter
+                  page={currentPage}
+                  pageSize={pageSize}
+                  count={leads.length}
+                  onPageChange={setPage}
+                  onPageSizeChange={changePageSize}
+                  noun="leads"
+                  className="-mx-6 -mb-6 mt-2"
+                />
               </div>
             )}
           </CardContent>

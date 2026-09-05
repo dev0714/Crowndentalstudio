@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { formatZAR, formatDateSA } from '@/lib/sa-formatting';
 import { STOCK_ALERT_LEVEL } from '@/lib/workflows/status-definitions';
 import { buildStockHealthSummary, buildStockLocationSummary } from '@/lib/stock/stock-health';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 
 type StockItem = {
   id: string;
@@ -31,6 +34,11 @@ function StockContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'locations' | 'reorder' | 'inventory'>('dashboard');
+  const [pageState, setPageState] = useState<Record<string, { page: number; size: number }>>({});
+  const pagingFor = (key: string) => pageState[key] || { page: 1, size: 10 };
+  const setPageFor = (key: string, page: number) => setPageState((current) => ({ ...current, [key]: { ...pagingFor(key), page } }));
+  const setSizeFor = (key: string, size: number) => setPageState((current) => ({ ...current, [key]: { page: 1, size } }));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -85,6 +93,29 @@ function StockContent() {
     return { color: 'bg-green-100 text-green-700', label: STOCK_ALERT_LEVEL.IN_STOCK };
   };
 
+  const paged = <T,>(key: string, rows: T[]) => {
+    const { page, size } = pagingFor(key);
+    const { pageCount } = describeRange(page, size, rows.length);
+    return sliceForPage<T>(rows, Math.min(page, pageCount), size);
+  };
+  const pagedItems = paged('inventory', filteredItems);
+  const pagedReorder = paged('reorder', health.reorderQueue);
+  const footer = (key: string, count: number, noun: string) => {
+    const { page, size } = pagingFor(key);
+    const { pageCount } = describeRange(page, size, count);
+    return (
+      <PaginationFooter
+        page={Math.min(page, pageCount)}
+        pageSize={size}
+        count={count}
+        onPageChange={(next) => setPageFor(key, next)}
+        onPageSizeChange={(next) => setSizeFor(key, next)}
+        noun={noun}
+        className="-mx-6 -mb-6 mt-3"
+      />
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
@@ -93,12 +124,39 @@ function StockContent() {
           <p className="text-slate-500 text-sm mt-0.5">Track inventory, expiry risk, and reorder pressure</p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+          <TabsList className="h-auto flex-wrap justify-start bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+            <TabsTrigger value="dashboard" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Dashboard
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : ''}</span>
+            </TabsTrigger>
+            <TabsTrigger value="inventory" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Inventory
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : filteredItems.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="reorder" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Reorder queue
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : health.reorderQueue.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="locations" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Locations
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : locations.locations.length}</span>
+            </TabsTrigger>
+          </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-5">
         <OperationsRiskStrip variant="stock" />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Total Items', value: health.totalItems, note: 'In inventory', gradient: 'from-navy-800 to-ink' },
-            { label: 'Low Stock', value: health.lowStockCount, note: 'Needs reorder', gradient: 'from-rose-600 to-pink-500' },
+            { label: 'Low Stock', value: health.lowStockCount, note: 'Needs reorder', gradient: 'from-[#9f2f2f] to-[#6f1d1d]' },
             { label: 'Expiry 30 Days', value: health.expiringWithin30Count, note: 'Use or transfer first', gradient: 'from-[#b8742e] to-[#8f5a22]' },
             { label: 'Inventory Value', value: formatZAR(health.inventoryValue), note: 'Total cost', gradient: 'from-teal to-[#0b6f71]' },
           ].map((card) => (
@@ -170,6 +228,133 @@ function StockContent() {
           </Card>
         </div>
 
+        </TabsContent>
+
+        <TabsContent value="inventory">
+        <div className="flex flex-wrap gap-3 sm:gap-4 mb-4">
+          <Input
+            placeholder="Search stock items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:max-w-sm"
+          />
+          <Button className="bg-navy-800 hover:bg-ink border-0 shadow-md">Add Stock Item</Button>
+        </div>
+
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <CardTitle className="text-base">Inventory List</CardTitle>
+            <CardDescription>{loading ? 'Loading...' : `${filteredItems.length} items displayed`}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-slate-600">Loading stock data...</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[960px]">
+                  <thead className="border-b-2 border-slate-200">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Code</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Item Name</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Category</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Qty On Hand</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">On Order</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Reorder Level</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Storage</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Batch</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Expiry</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Last Order</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
+                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Unit Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredItems.length > 0 ? (
+                      pagedItems.map((item) => {
+                        const status = getStockStatus(item);
+                        return (
+                          <tr key={item.id} className="border-b border-slate-100 hover:bg-cream/40 transition-colors">
+                            <td className="py-3 px-4 font-medium text-slate-900">{item.item_code}</td>
+                            <td className="py-3 px-4 text-slate-700">{item.item_name}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.category}</td>
+                            <td className="py-3 px-4 font-bold text-slate-900">{item.quantity_on_hand}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.quantity_on_order || 0}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.min_stock_level ?? item.reorder_level}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.storage_location || '-'}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.batch_number || '-'}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.expiry_date ? formatDateSA(item.expiry_date) : '-'}</td>
+                            <td className="py-3 px-4 text-slate-600">{item.last_reorder_date ? formatDateSA(item.last_reorder_date) : '-'}</td>
+                            <td className="py-3 px-4">
+                              <span className={`text-xs font-semibold px-2 py-1 rounded ${status.color}`}>
+                                {status.label}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-900 font-medium">{formatZAR(item.unit_cost)}</td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={12} className="py-8 text-center text-slate-600">
+                          No stock items found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {!loading && filteredItems.length > 0 && footer('inventory', filteredItems.length, 'items')}
+          </CardContent>
+        </Card>
+        </TabsContent>
+
+        <TabsContent value="reorder">
+        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+            <CardTitle className="text-base">Reorder Queue</CardTitle>
+            <CardDescription>
+              {loading ? 'Loading...' : `${health.reorderQueue.length} items need reordering or closer monitoring`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-slate-600">Loading reorder queue...</p>
+              </div>
+            ) : health.reorderQueue.length > 0 ? (
+              <div className="space-y-3">
+                {pagedReorder.map((item) => (
+                  <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{item.item_name}</p>
+                      <p className="text-sm text-slate-600">
+                        {item.item_code} · On hand {item.quantity_on_hand} / reorder {item.reorder_level}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Supplier: {item.supplier || 'N/A'} · Shortfall: {item.shortfall}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-slate-600">{item.recommended_action}</span>
+                      <Button size="sm" className="bg-navy-800 hover:bg-ink border-0 shadow-sm">
+                        Order Now
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-600">No reorder items right now</div>
+            )}
+            {!loading && health.reorderQueue.length > 0 && footer('reorder', health.reorderQueue.length, 'items')}
+          </CardContent>
+        </Card>
+        </TabsContent>
+
+        <TabsContent value="locations">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Storage Locations</CardTitle>
@@ -214,130 +399,8 @@ function StockContent() {
             )}
           </CardContent>
         </Card>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-3 sm:gap-4 mb-6">
-          <Input
-            placeholder="Search stock items..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:max-w-sm"
-          />
-          <Button className="bg-navy-800 hover:bg-ink border-0 shadow-md">Add Stock Item</Button>
-        </div>
-
-        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-            <CardTitle className="text-base">Reorder Queue</CardTitle>
-            <CardDescription>
-              {loading ? 'Loading...' : `${health.reorderQueue.length} items need reordering or closer monitoring`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <p className="text-slate-600">Loading reorder queue...</p>
-              </div>
-            ) : health.reorderQueue.length > 0 ? (
-              <div className="space-y-3">
-                {health.reorderQueue.map((item) => (
-                  <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900">{item.item_name}</p>
-                      <p className="text-sm text-slate-600">
-                        {item.item_code} · On hand {item.quantity_on_hand} / reorder {item.reorder_level}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Supplier: {item.supplier || 'N/A'} · Shortfall: {item.shortfall}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-600">{item.recommended_action}</span>
-                      <Button size="sm" className="bg-navy-800 hover:bg-ink border-0 shadow-sm">
-                        Order Now
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-600">No reorder items right now</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-            <CardTitle className="text-base">Inventory List</CardTitle>
-            <CardDescription>{loading ? 'Loading...' : `${filteredItems.length} items displayed`}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <p className="text-slate-600">Loading stock data...</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[960px]">
-                  <thead className="border-b-2 border-slate-200">
-                    <tr>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Code</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Item Name</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Category</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Qty On Hand</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">On Order</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Reorder Level</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Storage</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Batch</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Expiry</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Last Order</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Unit Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredItems.length > 0 ? (
-                      filteredItems.map((item) => {
-                        const status = getStockStatus(item);
-                        return (
-                          <tr key={item.id} className="border-b border-slate-100 hover:bg-cream/40 transition-colors">
-                            <td className="py-3 px-4 font-medium text-slate-900">{item.item_code}</td>
-                            <td className="py-3 px-4 text-slate-700">{item.item_name}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.category}</td>
-                            <td className="py-3 px-4 font-bold text-slate-900">{item.quantity_on_hand}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.quantity_on_order || 0}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.min_stock_level ?? item.reorder_level}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.storage_location || '-'}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.batch_number || '-'}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.expiry_date ? formatDateSA(item.expiry_date) : '-'}</td>
-                            <td className="py-3 px-4 text-slate-600">{item.last_reorder_date ? formatDateSA(item.last_reorder_date) : '-'}</td>
-                            <td className="py-3 px-4">
-                              <span className={`text-xs font-semibold px-2 py-1 rounded ${status.color}`}>
-                                {status.label}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-slate-900 font-medium">{formatZAR(item.unit_cost)}</td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={12} className="py-8 text-center text-slate-600">
-                          No stock items found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

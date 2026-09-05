@@ -124,7 +124,7 @@ function RolesContent() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">User Roles</h1>
@@ -212,7 +212,7 @@ function RolesContent() {
                     <p className="text-slate-500 py-4">No users with this role yet</p>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full">
+                      <table className="w-full min-w-[720px]">
                         <thead className="border-b-2 border-slate-200">
                           <tr>
                             <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>

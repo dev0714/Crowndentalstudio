@@ -156,9 +156,9 @@ function AutomationContent() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Automation Inbox</h1>
             <p className="text-slate-500 text-sm mt-0.5">Daily follow-up work pulled from recalls, appointments, and compliance gaps</p>

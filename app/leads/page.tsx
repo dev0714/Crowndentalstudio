@@ -85,9 +85,9 @@ function LeadsContent() {
   ];
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Leads</h1>
             <p className="text-slate-500 text-sm mt-0.5">Manage and track new leads</p>
@@ -135,7 +135,7 @@ function LeadsContent() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[720px]">
                   <thead className="border-b-2 border-slate-200">
                     <tr>
                       <th className="text-left py-3 px-4 font-semibold text-slate-900">Name</th>

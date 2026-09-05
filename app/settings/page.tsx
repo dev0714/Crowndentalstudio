@@ -283,7 +283,7 @@ function SettingsPageContent() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto space-y-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
@@ -304,7 +304,7 @@ function SettingsPageContent() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                 The key is never shown again after save. Only staff with CEO or Admin access can update it.
               </div>
@@ -369,7 +369,7 @@ function SettingsPageContent() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900">
                 Add your Resend API key and the &ldquo;from&rdquo; address you verified in Resend. Patients with an
                 email on file are then notified when their lab work arrives at the lab and when it is delivered back
@@ -495,7 +495,7 @@ function SettingsPageContent() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-4">
               <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900">
                 Pulling email uses <strong>IMAP</strong> (SMTP only sends). Enter your mail host, e.g.
                 <code className="mx-1 rounded bg-white/70 px-1">imap.gmail.com</code> on port 993, the full mailbox
@@ -573,7 +573,7 @@ function SettingsPageContent() {
           </Card>
 
           <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardContent className="p-6 flex items-start gap-3">
+            <CardContent className="p-4 sm:p-6 flex items-start gap-3">
               <Shield className="w-5 h-5 text-teal mt-0.5" />
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-slate-900">Security note</p>

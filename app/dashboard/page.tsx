@@ -72,10 +72,10 @@ function DashboardContent() {
   const today = new Date().toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="p-6 lg:p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
 
       {/* Page header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{greeting}, {user.full_name?.split(' ')[0]}</h1>
           <p className="text-slate-500 text-sm mt-0.5 flex items-center gap-1.5">

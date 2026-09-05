@@ -51,7 +51,11 @@ function initials(name?: string | null) {
   return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
 }
 
-export function Sidebar() {
+/**
+ * The navigation body shared by the desktop sidebar and the mobile drawer.
+ * It has no width or height of its own; the wrapper decides that.
+ */
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser } = usePortalSession();
@@ -62,10 +66,14 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 flex-shrink-0 flex flex-col bg-ink text-white min-h-screen border-r border-white/10">
+    <div className="flex h-full min-h-0 flex-col bg-ink text-white">
 
       {/* Brand */}
-      <Link href="/dashboard" className="flex items-center gap-3 px-5 py-5 border-b border-white/10 text-white hover:text-white">
+      <Link
+        href="/dashboard"
+        onClick={onNavigate}
+        className="flex items-center gap-3 px-5 py-5 border-b border-white/10 text-white hover:text-white"
+      >
         <Logo variant="icon" className="h-8 w-auto brightness-0 invert" />
         <div className="leading-none">
           <p className="font-display text-[19px] font-medium">Crown Dental Studio</p>
@@ -74,7 +82,7 @@ export function Sidebar() {
       </Link>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+      <nav className="flex-1 min-h-0 overflow-y-auto py-4 px-3 space-y-5">
         {NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
@@ -87,6 +95,7 @@ export function Sidebar() {
                   <Link
                     key={href}
                     href={href}
+                    onClick={onNavigate}
                     className={[
                       'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors border-l-2',
                       active
@@ -105,7 +114,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-white/10 space-y-1">
+      <div className="p-3 border-t border-white/10 space-y-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {currentUser && (
           <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-md bg-white/[0.06]">
             <div className="w-7 h-7 rounded-full bg-teal flex items-center justify-center flex-shrink-0 text-white font-semibold text-[11px]">
@@ -125,6 +134,15 @@ export function Sidebar() {
           Sign out
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Desktop sidebar: a fixed 240px column, hidden below the `lg` breakpoint. */
+export function Sidebar() {
+  return (
+    <aside className="hidden lg:flex w-60 flex-shrink-0 flex-col h-full border-r border-white/10">
+      <SidebarNav />
     </aside>
   );
 }

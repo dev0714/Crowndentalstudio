@@ -146,7 +146,7 @@ function LeadDetailContent() {
 
   if (loading) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           <p className="text-slate-600">Loading lead...</p>
         </div>
@@ -156,7 +156,7 @@ function LeadDetailContent() {
 
   if (error || !lead) {
     return (
-      <div className="p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
           <Button variant="ghost" onClick={() => router.push('/leads')} className="mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -171,7 +171,7 @@ function LeadDetailContent() {
   }
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <Button variant="ghost" onClick={() => router.push('/leads')} className="mb-2">
           <ArrowLeft className="w-4 h-4 mr-2" />

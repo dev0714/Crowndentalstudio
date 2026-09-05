@@ -253,9 +253,9 @@ function AppointmentsContent() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Appointments</h1>
             <p className="text-slate-500 text-sm mt-0.5">View and manage appointment schedules</p>
@@ -269,7 +269,7 @@ function AppointmentsContent() {
         </div>
 
         <Dialog open={isBookingOpen} onOpenChange={(open) => (open ? setIsBookingOpen(true) : closeBookingDialog())}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingAppointmentId ? 'Edit Appointment' : 'Book Appointment'}</DialogTitle>
               <DialogDescription>
@@ -394,13 +394,13 @@ function AppointmentsContent() {
         )}
 
         <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Appointment Details</DialogTitle>
             </DialogHeader>
             {selectedAppointment && (
               <div className="grid gap-4 py-2">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="font-medium text-slate-500">Patient</p>
                     <p className="text-slate-900">{patientNames[selectedAppointment.patient_id] || selectedAppointment.patient_id}</p>
@@ -583,7 +583,7 @@ function AppointmentsContent() {
                             <p className="font-semibold text-slate-900">
                               {patientNames[apt.patient_id] || apt.patient_id}
                             </p>
-                            <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-slate-600">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm text-slate-600">
                               <div>
                                 <span className="font-medium">Date:</span> {formatDateSA(apt.appointment_date)}
                               </div>

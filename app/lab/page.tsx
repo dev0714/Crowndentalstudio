@@ -360,10 +360,10 @@ function LabContent() {
   ];
 
   return (
-    <div className="p-6 lg:p-8 space-y-5">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5">
       {/* Header */}
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Lab Tracker</h1>
             <p className="text-slate-500 text-sm mt-0.5">
@@ -447,7 +447,7 @@ function LabContent() {
               </select>
               <Textarea value={newCase.slip_text} onChange={(e) => setNewCase({ ...newCase, slip_text: e.target.value })} placeholder="Slip notes" rows={2} className="md:col-span-2 lg:col-span-2 rounded-xl border-slate-200" />
               <Textarea value={newCase.description} onChange={(e) => setNewCase({ ...newCase, description: e.target.value })} placeholder="Case description" rows={2} className="md:col-span-2 lg:col-span-3 rounded-xl border-slate-200" />
-              <div className="md:col-span-2 lg:col-span-3 flex gap-3">
+              <div className="md:col-span-2 lg:col-span-3 flex flex-wrap gap-3">
                 <Button onClick={createLabCase} className="bg-navy-800 hover:bg-ink border-0 shadow-md" disabled={savingCaseId === 'new'}>
                   {savingCaseId === 'new' ? 'Creating...' : 'Create Lab Case'}
                 </Button>
@@ -468,7 +468,7 @@ function LabContent() {
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Workflow Board</p>
               <p className="text-xs text-slate-400">{labCases.length} cases · drag cards to move stages</p>
             </div>
-            <div className="overflow-x-auto pb-4">
+            <div className="overflow-x-auto pb-4 snap-x snap-mandatory lg:snap-none">
               <div className="flex gap-3" style={{ minWidth: `${columns.length * 250}px`, padding: '0 2px' }}>
                 {columns.map((stage) => {
                   const style = COLUMN_STYLE[stage] || { header: 'bg-slate-600', badge: 'bg-slate-400/40 text-white', cardBorder: 'border-l-slate-400', dot: 'bg-slate-400' };
@@ -478,7 +478,7 @@ function LabContent() {
                   return (
                     <div
                       key={stage}
-                      className="flex flex-col flex-1 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80"
+                      className="flex flex-col flex-1 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 snap-start"
                       style={{ minWidth: '240px' }}
                       onDragOver={(e) => handleDragOver(e, stage)}
                       onDragLeave={handleDragLeave}
@@ -610,7 +610,7 @@ function LabContent() {
                                   <button
                                     onClick={() => submitWorkflowEvent(labCase)}
                                     disabled={isSaving}
-                                    className="w-full rounded-lg bg-navy-800 text-white text-[11px] font-semibold py-1.5 hover:from-blue-700 hover:to-cyan-700 transition-all"
+                                    className="w-full rounded-lg bg-navy-800 text-white text-[11px] font-semibold py-1.5 hover:bg-ink transition-colors"
                                   >
                                     {isSaving ? 'Saving...' : 'Save event'}
                                   </button>

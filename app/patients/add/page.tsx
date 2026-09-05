@@ -149,7 +149,7 @@ export default function AddPatientPage() {
     <DashboardLayout>
       <div className="bg-cream min-h-full">
         {/* Header bar */}
-        <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 px-6 lg:px-8 py-6">
+        <div className="bg-gradient-to-r from-ink to-navy-800 px-4 sm:px-6 lg:px-8 py-6">
           <div className="max-w-4xl mx-auto">
             <button onClick={() => router.back()} className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors mb-4">
               ← Back to Patients
@@ -159,7 +159,7 @@ export default function AddPatientPage() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {error && (
             <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-red-700 text-sm">{error}</p>
@@ -446,7 +446,7 @@ export default function AddPatientPage() {
             </Card>
 
             {/* Form Actions */}
-            <div className="flex gap-3 pb-8">
+            <div className="flex flex-wrap gap-3 pb-8">
               <Button
                 type="submit"
                 disabled={loading}

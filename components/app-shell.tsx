@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, Bell, ChevronRight } from 'lucide-react';
-import { Sidebar } from './sidebar';
+import { Search, Bell, ChevronRight, Menu } from 'lucide-react';
+import { Sidebar, SidebarNav } from './sidebar';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { fetchCurrentSessionUser } from '@/lib/auth/session-client';
 import { isPortalRoute } from '@/lib/auth/portal-navigation';
 import { PortalSessionProvider } from '@/lib/auth/portal-session-context';
@@ -16,7 +17,7 @@ interface PatientResult {
   email?: string;
 }
 
-function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
+function TopBar({ currentUser, onMenu }: { currentUser: PublicAuthUser | null; onMenu: () => void }) {
   const router = useRouter();
   const [query, setQuery]           = useState('');
   const [results, setResults]       = useState<PatientResult[]>([]);
@@ -63,14 +64,24 @@ function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
     name ? name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() : 'U';
 
   return (
-    <header className="flex-shrink-0 h-14 flex items-center gap-3 px-5 bg-white border-b border-hairline z-30">
+    <header className="flex-shrink-0 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 bg-white border-b border-hairline z-30">
+
+      {/* Mobile menu */}
+      <button
+        type="button"
+        onClick={onMenu}
+        aria-label="Open navigation"
+        className="lg:hidden -ml-1 p-2 rounded-full text-ink hover:bg-cream transition-colors"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
 
       {/* Patient search */}
       <div ref={searchRef} className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Search patients by name or email..."
+          placeholder="Search patients…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setShowDrop(true)}
@@ -155,7 +166,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [currentUser, setCurrentUser] = useState<PublicAuthUser | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
   const isDashboardRoute = isPortalRoute(pathname);
+
+  /* close the mobile drawer whenever the route changes */
+  useEffect(() => {
+    setNavOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isDashboardRoute) {
@@ -189,10 +206,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <PortalSessionProvider currentUser={currentUser}>
-      <div className="portal flex h-screen bg-cream text-ink overflow-hidden">
+      <div className="portal flex h-[100dvh] bg-cream text-ink overflow-hidden">
         <Sidebar />
+
+        {/* Mobile navigation drawer */}
+        <Sheet open={navOpen} onOpenChange={setNavOpen}>
+          <SheetContent
+            side="left"
+            className="w-72 max-w-[85vw] p-0 gap-0 bg-ink text-white border-white/10 lg:hidden [&>button]:text-white/70 [&>button]:hover:text-white"
+          >
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <SidebarNav onNavigate={() => setNavOpen(false)} />
+          </SheetContent>
+        </Sheet>
+
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <TopBar currentUser={currentUser} />
+          <TopBar currentUser={currentUser} onMenu={() => setNavOpen(true)} />
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>

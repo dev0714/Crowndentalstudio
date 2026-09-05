@@ -3,6 +3,7 @@ import type { Patient, CreatePatientRequest } from '@/lib/types/crm';
 import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { writeAuditEntry } from '@/lib/audit/write-audit-entry';
 import { supabaseServer } from '@/lib/supabase/server';
+import { buildPatientSearchFilter, parseListParams } from '@/lib/patients/patient-list-query';
 
 // Postgres rejects '' for date/numeric/uuid columns, so blank form fields must become null.
 function normalizeEmptyStrings<T extends Record<string, unknown>>(payload: T): T {
@@ -43,16 +44,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data });
     }
 
-    // Get all patients with pagination
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    // Get all patients with pagination and optional free-text search
+    const { page, limit, search } = parseListParams(searchParams);
     const offset = (page - 1) * limit;
 
-    const { data, error, count } = await supabaseServer
+    let query = supabaseServer
       .from('patients')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
+
+    const searchFilter = buildPatientSearchFilter(search);
+    if (searchFilter) {
+      query = query.or(searchFilter);
+    }
+
+    const { data, error, count } = await query.range(offset, offset + limit - 1);
 
     if (error) throw error;
     return NextResponse.json({ data, count, page, limit });

@@ -8,10 +8,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDateSA } from '@/lib/sa-formatting';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 import type { AutomationQueue, AutomationQueueItem } from '@/lib/automation/automation-queue';
 import type { AutomationEventFeed } from '@/lib/automation/automation-events';
 
 const CONTACT_TYPES = ['call', 'email', 'sms', 'whatsapp', 'in_person'] as const;
+
+type KindGroup = 'all' | 'recalls' | 'confirmations' | 'compliance' | 'outreach';
+type PriorityFilter = 'all' | 'high' | 'medium' | 'low';
+
+const KIND_GROUP_OF: Record<string, KindGroup> = {
+  'routine-recall': 'recalls',
+  'treatment-review': 'recalls',
+  'procedure-review': 'recalls',
+  'lab-follow-up': 'recalls',
+  'appointment-confirmation': 'confirmations',
+  'missing-popia-consent': 'compliance',
+  'missing-signed-consent': 'compliance',
+  'outreach-gap': 'outreach',
+};
+
+const KIND_LABEL: Record<string, string> = {
+  'routine-recall': 'Routine recall',
+  'treatment-review': 'Treatment review',
+  'procedure-review': 'Procedure review',
+  'lab-follow-up': 'Lab follow-up',
+  'appointment-confirmation': 'Appointment confirmation',
+  'missing-popia-consent': 'POPIA consent',
+  'missing-signed-consent': 'Signed consent',
+  'outreach-gap': 'Outreach gap',
+};
+
+const GROUP_CHIP: Record<KindGroup, string> = {
+  all: 'bg-ink text-white',
+  recalls: 'bg-navy-800 text-white',
+  confirmations: 'bg-teal text-white',
+  compliance: 'bg-[#b8742e] text-white',
+  outreach: 'bg-[#5b6b7f] text-white',
+};
+
+const PRIORITY_CHIP: Record<'high' | 'medium' | 'low', string> = {
+  high: 'bg-red-50 text-red-700 border-red-200',
+  medium: 'bg-amber-50 text-amber-700 border-amber-200',
+  low: 'bg-slate-50 text-slate-600 border-slate-200',
+};
 
 type AutomationPageData = {
   queue: AutomationQueue;
@@ -43,10 +84,45 @@ function AutomationContent() {
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [formState, setFormState] = useState<OutreachFormState | null>(null);
+  const [groupFilter, setGroupFilter] = useState<KindGroup>('all');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [feedPage, setFeedPage] = useState(1);
+  const [feedPageSize, setFeedPageSize] = useState(10);
 
   const queue = automation?.queue || null;
   const events = automation?.events || null;
-  const items = queue?.items || [];
+  const allItems = queue?.items || [];
+  const items = allItems.filter(
+    (item) =>
+      (groupFilter === 'all' || KIND_GROUP_OF[item.kind] === groupFilter) &&
+      (priorityFilter === 'all' || item.priority === priorityFilter),
+  );
+  const { pageCount } = describeRange(page, pageSize, items.length);
+  const currentPage = Math.min(page, pageCount);
+  const visibleItems = sliceForPage<AutomationQueueItem>(items, currentPage, pageSize);
+  const feedItems = events?.items || [];
+  const { pageCount: feedPageCount } = describeRange(feedPage, feedPageSize, feedItems.length);
+  const currentFeedPage = Math.min(feedPage, feedPageCount);
+  const visibleFeed = sliceForPage(feedItems, currentFeedPage, feedPageSize);
+
+  const changeGroup = (group: KindGroup) => {
+    setGroupFilter(group);
+    setPage(1);
+  };
+  const changePriority = (priority: PriorityFilter) => {
+    setPriorityFilter(priority);
+    setPage(1);
+  };
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+  };
+  const changeFeedPageSize = (size: number) => {
+    setFeedPageSize(size);
+    setFeedPage(1);
+  };
 
   const loadQueue = async () => {
     const response = await fetch('/api/crm/automation', { credentials: 'include' });
@@ -92,16 +168,6 @@ function AutomationContent() {
       { label: 'Outreach Gaps', value: queue?.summary.outreach_gaps ?? 0 },
     ],
     [queue],
-  );
-
-  const eventCards = useMemo(
-    () => [
-      { label: 'Automation Events', value: events?.summary.total ?? 0 },
-      { label: 'Inbound', value: events?.summary.inbound ?? 0 },
-      { label: 'Outbound', value: events?.summary.outbound ?? 0 },
-      { label: 'Resolved', value: events?.summary.resolved ?? 0 },
-    ],
-    [events],
   );
 
   const openForm = (item: AutomationQueueItem) => {
@@ -176,7 +242,7 @@ function AutomationContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {priorityCards.map((card, i) => {
-            const gradients = ['from-navy-800 to-ink','from-rose-600 to-pink-500','from-[#b8742e] to-[#8f5a22]','from-teal to-[#0b6f71]'];
+            const gradients = ['from-navy-800 to-ink', 'from-[#9f2f2f] to-[#6f1d1d]', 'from-[#b8742e] to-[#8f5a22]', 'from-[#5b6b7f] to-[#3b4653]'];
             return (
               <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 4]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -189,20 +255,7 @@ function AutomationContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categoryCards.map((card, i) => {
-            const gradients = ['from-[#3f4c7a] to-[#2c365c]','from-cyan-600 to-blue-500','from-teal-600 to-emerald-500','from-[#4b5563] to-[#1f2937]'];
-            return (
-              <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 4]} p-5 text-white shadow-md`}>
-                <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
-                <p className="text-xs font-semibold opacity-75">{card.label}</p>
-                <div className="absolute -right-3 -bottom-3 w-14 h-14 rounded-full bg-white/10" />
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {eventCards.map((card, i) => {
-            const gradients = ['from-blue-600 to-indigo-500','from-emerald-600 to-green-500','from-amber-600 to-yellow-500','from-rose-600 to-red-500'];
+            const gradients = ['from-[#3f4c7a] to-[#2c365c]', 'from-teal to-[#0b6f71]', 'from-[#b8742e] to-[#8f5a22]', 'from-[#5b6b7f] to-[#3b4653]'];
             return (
               <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i % 4]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -215,58 +268,95 @@ function AutomationContent() {
 
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-            <CardTitle className="text-base">Action Queue</CardTitle>
-            <CardDescription className="text-xs">{loading ? 'Loading...' : `${items.length} actions ready to review`}</CardDescription>
+            <div className="flex flex-col gap-3">
+              <div>
+                <CardTitle className="text-base">Action Queue</CardTitle>
+                <CardDescription className="text-xs">
+                  {loading ? 'Loading...' : items.length === allItems.length ? `${allItems.length} actions ready to review` : `${items.length} of ${allItems.length} actions`}
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {([
+                  ['all', 'All', allItems.length],
+                  ['recalls', 'Recalls', queue?.summary.recalls ?? 0],
+                  ['confirmations', 'Confirmations', queue?.summary.confirmations ?? 0],
+                  ['compliance', 'Compliance', queue?.summary.compliance ?? 0],
+                  ['outreach', 'Outreach gaps', queue?.summary.outreach_gaps ?? 0],
+                ] as Array<[KindGroup, string, number]>).map(([group, label, count]) => (
+                  <button
+                    key={group}
+                    type="button"
+                    onClick={() => changeGroup(group)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                      groupFilter === group ? 'bg-ink text-white border-ink' : 'bg-white text-slate-600 border-slate-200 hover:border-teal/40'
+                    }`}
+                  >
+                    {label} ({count})
+                  </button>
+                ))}
+                <span className="mx-1 h-4 w-px bg-slate-200 hidden sm:block" />
+                {(['all', 'high', 'medium', 'low'] as PriorityFilter[]).map((priority) => (
+                  <button
+                    key={priority}
+                    type="button"
+                    onClick={() => changePriority(priority)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
+                      priorityFilter === priority ? 'bg-ink text-white border-ink' : 'bg-white text-slate-600 border-slate-200 hover:border-teal/40'
+                    }`}
+                  >
+                    {priority === 'all' ? 'Any priority' : `${priority[0].toUpperCase()}${priority.slice(1)}`}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p className="py-8 text-center text-slate-600">Loading automation queue...</p>
-            ) : items.length > 0 ? (
+            ) : visibleItems.length > 0 ? (
               <div className="space-y-4">
-                {items.map((item) => {
+                {visibleItems.map((item) => {
                   const isActive = activeItemId === item.id;
                   return (
                     <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-teal/30 transition-colors">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className="rounded bg-slate-900 px-2 py-1 text-xs font-semibold text-white">
-                              {item.kind.replace('-', ' ')}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${GROUP_CHIP[KIND_GROUP_OF[item.kind] || 'all']}`}>
+                              {KIND_LABEL[item.kind] || item.kind.replace(/-/g, ' ')}
                             </span>
-                            <span
-                              className={`rounded px-2 py-1 text-xs font-semibold ${
-                                item.priority === 'high'
-                                  ? 'bg-red-100 text-red-700'
-                                  : item.priority === 'medium'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-blue-100 text-ink'
-                              }`}
-                            >
+                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${PRIORITY_CHIP[item.priority]}`}>
                               {item.priority} priority
                             </span>
+                            {item.days_overdue > 0 && (
+                              <span className="rounded-full border px-2 py-0.5 text-[11px] font-semibold bg-red-50 text-red-600 border-red-200">
+                                {item.days_overdue}d overdue
+                              </span>
+                            )}
                           </div>
-                          <p className="font-semibold text-slate-900">
-                            <Link href={`/patients/${item.patient_id}`} className="hover:underline">
+                          <p className="font-semibold text-ink">
+                            <Link href={`/patients/${item.patient_id}`} className="hover:text-teal hover:underline">
                               {item.patient_name}
                             </Link>
                           </p>
-                          <p className="text-sm text-slate-600 mt-1">{item.title}</p>
+                          <p className="text-sm text-slate-700 mt-1">{item.title}</p>
                           <p className="text-sm text-slate-600">{item.reason}</p>
-                          <p className="text-sm text-slate-500 mt-2">
-                            Source: {item.source} | Due: {formatDateSA(item.due_date)}
+                          <p className="text-xs text-slate-500 mt-2">
+                            {item.source}
+                            {item.last_activity_date ? ` · last activity ${formatDateSA(item.last_activity_date)}` : ''}
+                            {item.due_date ? ` · due ${formatDateSA(item.due_date)}` : ''}
+                            {` · suggested ${item.suggested_contact_type.replace('_', ' ')}`}
                           </p>
-                          <p className="text-xs text-slate-500 mt-1">Suggested: {item.suggested_contact_type} | {item.suggested_outcome}</p>
                         </div>
 
-                        <div className="flex flex-col items-start gap-2 lg:items-end">
-                          <Button
-                            onClick={() => openForm(item)}
-                            className="bg-navy-800 hover:bg-ink border-0 shadow-sm text-xs"
-                            disabled={submittingId === item.id}
-                          >
-                            Log outreach
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={() => (isActive ? closeForm() : openForm(item))}
+                          variant={isActive ? 'outline' : 'default'}
+                          className={`text-xs w-full sm:w-auto ${isActive ? 'border-slate-200' : 'bg-navy-800 hover:bg-ink border-0 shadow-sm'}`}
+                          disabled={submittingId === item.id}
+                        >
+                          {isActive ? 'Cancel' : 'Log outreach'}
+                        </Button>
                       </div>
 
                       {isActive && formState && (
@@ -326,7 +416,20 @@ function AutomationContent() {
                 })}
               </div>
             ) : (
-              <p className="py-8 text-center text-slate-600">No automation items are currently due</p>
+              <p className="py-8 text-center text-slate-600">
+                {allItems.length === 0 ? 'No automation items are currently due' : 'No actions match these filters'}
+              </p>
+            )}
+            {!loading && (
+              <PaginationFooter
+                page={currentPage}
+                pageSize={pageSize}
+                count={items.length}
+                onPageChange={setPage}
+                onPageSizeChange={changePageSize}
+                noun="actions"
+                className="-mx-6 -mb-6 mt-4"
+              />
             )}
           </CardContent>
         </Card>
@@ -334,19 +437,23 @@ function AutomationContent() {
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Automation Feed</CardTitle>
-            <CardDescription className="text-xs">{loading ? 'Loading...' : `${events?.items.length ?? 0} recent automation events`}</CardDescription>
+            <CardDescription className="text-xs">
+              {loading
+                ? 'Loading...'
+                : `${events?.summary.total ?? 0} recent events · ${events?.summary.inbound ?? 0} inbound · ${events?.summary.outbound ?? 0} outbound · ${events?.summary.resolved ?? 0} resolved`}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p className="py-8 text-center text-slate-600">Loading automation feed...</p>
             ) : (events?.items.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {events?.items.map((event) => (
+                {visibleFeed.map((event) => (
                   <div key={event.id} className="rounded-lg border border-slate-200 bg-white p-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded bg-slate-900 px-2 py-1 text-xs font-semibold text-white">{event.channel_label}</span>
-                      <span className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{event.direction_label}</span>
-                      <span className="rounded bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">{event.status_label}</span>
+                      <span className="rounded-full bg-navy-800 px-2 py-0.5 text-[11px] font-semibold text-white">{event.channel_label}</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700">{event.direction_label}</span>
+                      <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">{event.status_label}</span>
                     </div>
                     <div className="mt-3 flex flex-col gap-1">
                       <p className="font-semibold text-slate-900">
@@ -367,6 +474,17 @@ function AutomationContent() {
               </div>
             ) : (
               <p className="py-8 text-center text-slate-600">No automation events have been logged yet</p>
+            )}
+            {!loading && feedItems.length > 0 && (
+              <PaginationFooter
+                page={currentFeedPage}
+                pageSize={feedPageSize}
+                count={feedItems.length}
+                onPageChange={setFeedPage}
+                onPageSizeChange={changeFeedPageSize}
+                noun="events"
+                className="-mx-6 -mb-6 mt-3"
+              />
             )}
           </CardContent>
         </Card>

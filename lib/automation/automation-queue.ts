@@ -81,6 +81,16 @@ export type AutomationQueue = {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const APPOINTMENT_CONFIRMATION_WINDOW_HOURS = 48;
 const OUTREACH_GAP_DAYS = 30;
+const INACTIVE_APPOINTMENT_STATUSES = new Set(['cancelled', 'canceled', 'no show', 'no-show', 'no_show']);
+
+function isActivePatient(patient: AutomationPatient) {
+  const status = (patient.status || 'Active').trim().toLowerCase();
+  return status === 'active';
+}
+
+function isActiveAppointment(appointment: AutomationAppointment) {
+  return !INACTIVE_APPOINTMENT_STATUSES.has((appointment.status || '').trim().toLowerCase());
+}
 
 const PRIORITY_ORDER: Record<AutomationPriority, number> = {
   high: 0,
@@ -183,7 +193,25 @@ export function buildAutomationQueue(
   nowIso = new Date().toISOString(),
 ): AutomationQueue {
   const items: AutomationQueueItem[] = [];
-  const patientsById = new Map(patients.map((patient) => [patient.id, patient]));
+  const activePatients = patients.filter(isActivePatient);
+  const patientsById = new Map(activePatients.map((patient) => [patient.id, patient]));
+  const nowTime = toTime(nowIso) ?? Date.now();
+
+  // Appointments count as touchpoints: the latest past visit, and whether the patient is already booked in.
+  const lastVisitByPatientId = new Map<string, string>();
+  const bookedPatientIds = new Set<string>();
+  appointments.filter(isActiveAppointment).forEach((appointment) => {
+    const time = toTime(appointment.appointment_date);
+    if (time == null) return;
+    if (time >= nowTime) {
+      bookedPatientIds.add(appointment.patient_id);
+      return;
+    }
+    const current = toTime(lastVisitByPatientId.get(appointment.patient_id));
+    if (current == null || time > current) {
+      lastVisitByPatientId.set(appointment.patient_id, appointment.appointment_date);
+    }
+  });
   const consentByPatientId = new Map(communicationConsents.map((row) => [row.patient_id, row]));
   const signedCountByPatientId = new Map<string, number>();
   const latestContactByPatientId = new Map<string, AutomationPatientContact>();
@@ -199,9 +227,11 @@ export function buildAutomationQueue(
     }
   });
 
-  recallItems.forEach((item) => {
-    items.push(recallItemToAutomationItem(item));
-  });
+  recallItems
+    .filter((item) => patientsById.has(item.patient_id))
+    .forEach((item) => {
+      items.push(recallItemToAutomationItem(item));
+    });
 
   appointments
     .filter((appointment) => appointment.status === 'Scheduled')
@@ -239,11 +269,16 @@ export function buildAutomationQueue(
       );
     });
 
-  patients.forEach((patient) => {
+  activePatients.forEach((patient) => {
     const patientConsent = consentByPatientId.get(patient.id);
     const signedCount = signedCountByPatientId.get(patient.id) || 0;
     const latestContact = latestContactByPatientId.get(patient.id);
-    const daysSinceContact = latestContact ? daysBetween(latestContact.contact_date, nowIso) : null;
+    const lastVisit = lastVisitByPatientId.get(patient.id);
+    // The most recent of: a logged contact, a past appointment, or the day the patient was added.
+    const lastTouchDate = [latestContact?.contact_date, lastVisit, patient.created_at]
+      .filter((value): value is string => Boolean(value))
+      .sort((a, b) => (toTime(b) ?? 0) - (toTime(a) ?? 0))[0];
+    const daysSinceTouch = daysBetween(lastTouchDate, nowIso);
 
     if (!patientConsent || !patientConsent.popia_consent) {
       items.push(
@@ -254,7 +289,7 @@ export function buildAutomationQueue(
           patient_name: patientName(patient),
           title: 'POPIA consent missing',
           reason: 'Patient communication consent does not confirm POPIA consent',
-          due_date: toIso(patientConsent?.updated_at || nowIso),
+          due_date: toIso(nowIso),
           last_activity_date: toIso(patientConsent?.updated_at || patient.created_at),
           priority: 'high',
           source: 'Communication consent',
@@ -293,7 +328,13 @@ export function buildAutomationQueue(
       );
     }
 
-    if (daysSinceContact == null || daysSinceContact >= OUTREACH_GAP_DAYS) {
+    // Outreach gap: nothing has happened with this patient for 30 days and they are not booked in.
+    if (!bookedPatientIds.has(patient.id) && daysSinceTouch != null && daysSinceTouch >= OUTREACH_GAP_DAYS) {
+      const lastTouchLabel = latestContact && latestContact.contact_date === lastTouchDate
+        ? `Last contact was a ${latestContact.contact_type.replace('_', ' ')}`
+        : lastVisit === lastTouchDate
+          ? 'Last touchpoint was an appointment'
+          : 'No contact or appointment since the patient was added';
       items.push(
         createItem({
           id: `followup:gap:${patient.id}`,
@@ -301,18 +342,19 @@ export function buildAutomationQueue(
           patient_id: patient.id,
           patient_name: patientName(patient),
           title: 'Outreach gap',
-          reason: 'Patient has not been contacted recently',
-          due_date: toIso(latestContact?.contact_date || patient.created_at),
-          last_activity_date: toIso(latestContact?.contact_date || patient.created_at),
+          reason: `${lastTouchLabel}, ${daysSinceTouch} days ago`,
+          due_date: toIso(new Date((toTime(lastTouchDate) ?? nowTime) + OUTREACH_GAP_DAYS * DAY_MS).toISOString()),
+          last_activity_date: toIso(lastTouchDate),
           priority: 'low',
-          source: 'Patient contacts',
+          source: latestContact && latestContact.contact_date === lastTouchDate ? 'Patient contacts' : lastVisit === lastTouchDate ? 'Appointments' : 'Patient record',
           source_id: latestContact?.id || patient.id,
           suggested_contact_type: 'call',
           suggested_outcome: 'Reached',
           metadata: {
             last_contact_type: latestContact?.contact_type || null,
+            last_touch: lastTouchDate,
           },
-          days_overdue: daysSinceContact == null ? OUTREACH_GAP_DAYS : daysSinceContact - OUTREACH_GAP_DAYS,
+          days_overdue: daysSinceTouch - OUTREACH_GAP_DAYS,
         }),
       );
     }

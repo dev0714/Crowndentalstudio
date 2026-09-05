@@ -59,6 +59,11 @@ function BlogsContent() {
 
   const filteredPosts = useMemo(() => {
     const query = search.toLowerCase().trim();
+    if (!query) return posts;
+    return posts.filter((post) =>
+      `${post.title} ${post.category} ${post.slug}`.toLowerCase().includes(query)
+    );
+  }, [posts, search]);
   const { pageCount } = describeRange(page, pageSize, filteredPosts.length);
   const currentPage = Math.min(page, pageCount);
   const pagedPosts = sliceForPage<BlogPost>(filteredPosts, currentPage, pageSize);
@@ -66,11 +71,6 @@ function BlogsContent() {
     setPageSize(size);
     setPage(1);
   };
-    if (!query) return posts;
-    return posts.filter((post) =>
-      `${post.title} ${post.category} ${post.slug}`.toLowerCase().includes(query)
-    );
-  }, [posts, search]);
 
   useEffect(() => {
     fetchPosts();

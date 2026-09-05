@@ -14,6 +14,20 @@ import {
 import { formatDateSA } from '@/lib/sa-formatting';
 import { LAB_WORKFLOW_STAGE, LAB_WORKFLOW_STAGES } from '@/lib/workflows/status-definitions';
 import { OperationsRiskStrip } from '@/components/operations-risk-strip';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
+import {
+  LAB_BOARD_STAGES,
+  NEXT_STAGE_ACTION,
+  daysAtStage,
+  describeDue,
+  isClosed,
+  isRecentlyClosed,
+  matchesCaseSearch,
+  nextLabStage,
+  sortBoardCases,
+} from '@/lib/lab/lab-board';
+import { Search } from 'lucide-react';
 
 type PatientOption = {
   id: string;
@@ -107,13 +121,24 @@ const STAGE_SHORT: Record<string, string> = {
   [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]: 'Delivered to Studio',
 };
 
-// Column header gradient + text color
-const COLUMN_STYLE: Record<string, { header: string; badge: string; cardBorder: string; dot: string }> = {
-  [LAB_WORKFLOW_STAGE.NEW_PATIENT]:            { header: 'bg-navy-800',       badge: 'bg-blue-400/40 text-white',    cardBorder: 'border-l-blue-400',    dot: 'bg-blue-400' },
-  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]:  { header: 'bg-teal',       badge: 'bg-cyan-400/40 text-white',    cardBorder: 'border-l-cyan-400',    dot: 'bg-cyan-400' },
-  [LAB_WORKFLOW_STAGE.AT_LAB]:                 { header: 'bg-gradient-to-r from-violet-600 to-violet-500',   badge: 'bg-violet-400/40 text-white',  cardBorder: 'border-l-violet-400',  dot: 'bg-violet-400' },
-  [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]:    { header: 'bg-gradient-to-r from-emerald-600 to-emerald-500', badge: 'bg-emerald-400/40 text-white', cardBorder: 'border-l-emerald-400', dot: 'bg-emerald-400' },
+// Column accent: dot + count badge in the header, left border on cards, drop highlight
+const COLUMN_STYLE: Record<string, { dot: string; badge: string; cardBorder: string; chip: string }> = {
+  [LAB_WORKFLOW_STAGE.NEW_PATIENT]:            { dot: 'bg-navy-800',  badge: 'bg-navy-800 text-white',  cardBorder: 'border-l-navy-800',  chip: 'bg-navy-800 text-white' },
+  [LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO]:  { dot: 'bg-teal',      badge: 'bg-teal text-white',      cardBorder: 'border-l-teal',      chip: 'bg-teal text-white' },
+  [LAB_WORKFLOW_STAGE.AT_LAB]:                 { dot: 'bg-[#b8742e]', badge: 'bg-[#b8742e] text-white', cardBorder: 'border-l-[#b8742e]', chip: 'bg-[#b8742e] text-white' },
+  [LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO]:    { dot: 'bg-emerald-600', badge: 'bg-emerald-600 text-white', cardBorder: 'border-l-emerald-600', chip: 'bg-emerald-600 text-white' },
 };
+const FALLBACK_STYLE = { dot: 'bg-slate-400', badge: 'bg-slate-500 text-white', cardBorder: 'border-l-slate-400', chip: 'bg-slate-500 text-white' };
+
+const DUE_TONE_CLASS: Record<string, string> = {
+  overdue: 'bg-red-50 text-red-600 border-red-200',
+  today: 'bg-amber-50 text-amber-700 border-amber-200',
+  soon: 'bg-amber-50 text-amber-700 border-amber-200',
+  normal: 'bg-slate-50 text-slate-500 border-slate-200',
+  none: 'bg-slate-50 text-slate-400 border-slate-200',
+};
+
+const DELIVERED_DAYS_ON_BOARD = 7;
 
 // Map target stage → best event type for the API
 const STAGE_TO_EVENT: Record<string, string> = {
@@ -167,6 +192,10 @@ function LabContent() {
   // Drag-and-drop state
   const [dragCaseId, setDragCaseId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [boardSearch, setBoardSearch] = useState('');
+  const [showAllDelivered, setShowAllDelivered] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
 
   const loadLabCases = async () => {
     const [labResponse, patientsResponse] = await Promise.all([
@@ -183,6 +212,10 @@ function LabContent() {
     setLabCases(labPayload.data || []);
     setPatients(patientsPayload.data || []);
   };
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [boardSearch]);
 
   useEffect(() => {
     const run = async () => {
@@ -304,17 +337,11 @@ function LabContent() {
     }
   };
 
-  const handleDrop = async (e: React.DragEvent, targetStage: string) => {
-    e.preventDefault();
-    setDragOverStage(null);
-    const caseId = e.dataTransfer.getData('text/plain') || dragCaseId;
-    setDragCaseId(null);
-    if (!caseId) return;
-
+  /** Move a case to another column: optimistic update, then log the matching workflow event. */
+  const moveCaseToStage = async (caseId: string, targetStage: string) => {
     const labCase = labCases.find((c) => c.id === caseId);
     if (!labCase || labCase.workflow_stage === targetStage) return;
 
-    // Optimistic update
     setLabCases((prev) =>
       prev.map((c) => (c.id === caseId ? { ...c, workflow_stage: targetStage } : c)),
     );
@@ -333,14 +360,26 @@ function LabContent() {
           notes: `Moved to ${targetStage} via board`,
         }),
       });
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        await refreshLabCases(); // revert on failure
+        setError(payload.error || 'Failed to move case');
       }
+      // Always reload so the closed flag, timeline and stage come back from the server.
+      await refreshLabCases();
     } catch {
       await refreshLabCases();
     } finally {
       setSavingCaseId(null);
     }
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetStage: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const caseId = e.dataTransfer.getData('text/plain') || dragCaseId;
+    setDragCaseId(null);
+    if (!caseId) return;
+    await moveCaseToStage(caseId, targetStage);
   };
 
   const handleDragEnd = () => {
@@ -352,12 +391,29 @@ function LabContent() {
   const closedCases = labCases.filter((item) => item.workflow_snapshot?.is_closed === true);
   const recallCases = labCases.filter((item) => item.workflow_snapshot?.requires_recall);
 
-  const columns = [
-    LAB_WORKFLOW_STAGE.NEW_PATIENT,
-    LAB_WORKFLOW_STAGE.COLLECTED_FROM_STUDIO,
-    LAB_WORKFLOW_STAGE.AT_LAB,
-    LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO,
-  ];
+  const columns = LAB_BOARD_STAGES;
+  const now = new Date();
+  const searchedCases = labCases.filter((item) => matchesCaseSearch(item, boardSearch));
+  const olderDeliveredCount = searchedCases.filter(
+    (item) => isClosed(item) && !isRecentlyClosed(item, now, DELIVERED_DAYS_ON_BOARD),
+  ).length;
+
+  const casesForColumn = (stage: string) => {
+    const inStage = searchedCases.filter((item) => (item.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT) === stage);
+    const visible = stage === LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO && !showAllDelivered
+      ? inStage.filter((item) => !isClosed(item) || isRecentlyClosed(item, now, DELIVERED_DAYS_ON_BOARD))
+      : inStage;
+    return sortBoardCases<LabCase>(visible, now);
+  };
+
+  const historyCases = sortBoardCases<LabCase>(searchedCases, now);
+  const { pageCount: historyPageCount } = describeRange(historyPage, historyPageSize, historyCases.length);
+  const currentHistoryPage = Math.min(historyPage, historyPageCount);
+  const visibleHistory = sliceForPage<LabCase>(historyCases, currentHistoryPage, historyPageSize);
+  const changeHistoryPageSize = (size: number) => {
+    setHistoryPageSize(size);
+    setHistoryPage(1);
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-5">
@@ -458,62 +514,98 @@ function LabContent() {
         </div>
       )}
 
-      {/* KANBAN BOARD - full width */}
-      <div className="w-full">
+      {/* WORKFLOW BOARD */}
+      <div className="max-w-7xl mx-auto">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-slate-500 text-sm">Loading lab workflow...</div>
         ) : (
           <>
-            <div className="flex items-center justify-between px-1 mb-3 max-w-7xl mx-auto">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Workflow Board</p>
-              <p className="text-xs text-slate-400">{labCases.length} cases · drag cards to move stages</p>
+            {/* Board toolbar */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Workflow board</p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {openCases.length} open · {closedCases.length} delivered · drag a card or use its action button to move it
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                  <Input
+                    value={boardSearch}
+                    onChange={(e) => setBoardSearch(e.target.value)}
+                    placeholder="Search patient, case, lab, shade…"
+                    className="pl-8 h-9 text-xs rounded-full bg-white border-slate-200"
+                  />
+                </div>
+                <div className="inline-flex rounded-full border border-slate-200 bg-white p-0.5 text-[11px] font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllDelivered(false)}
+                    className={`px-3 py-1 rounded-full transition-colors ${!showAllDelivered ? 'bg-ink text-white' : 'text-slate-500 hover:text-ink'}`}
+                  >
+                    Delivered: last {DELIVERED_DAYS_ON_BOARD} days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllDelivered(true)}
+                    className={`px-3 py-1 rounded-full transition-colors ${showAllDelivered ? 'bg-ink text-white' : 'text-slate-500 hover:text-ink'}`}
+                  >
+                    All
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="overflow-x-auto pb-4 snap-x snap-mandatory lg:snap-none">
-              <div className="flex gap-3" style={{ minWidth: `${columns.length * 250}px`, padding: '0 2px' }}>
+
+            <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory lg:snap-none">
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(260px, 1fr))` }}>
                 {columns.map((stage) => {
-                  const style = COLUMN_STYLE[stage] || { header: 'bg-slate-600', badge: 'bg-slate-400/40 text-white', cardBorder: 'border-l-slate-400', dot: 'bg-slate-400' };
-                  const columnCases = labCases.filter((item) => (item.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT) === stage);
+                  const style = COLUMN_STYLE[stage] || FALLBACK_STYLE;
+                  const columnCases = casesForColumn(stage);
+                  const overdueCount = columnCases.filter((item) => !isClosed(item) && describeDue(item.due_date, now).tone === 'overdue').length;
                   const isOver = dragOverStage === stage;
+                  const isDeliveredColumn = stage === LAB_WORKFLOW_STAGE.DELIVERED_TO_STUDIO;
 
                   return (
                     <div
                       key={stage}
-                      className="flex flex-col flex-1 rounded-2xl overflow-hidden shadow-sm border border-slate-200/80 snap-start"
-                      style={{ minWidth: '240px' }}
+                      className={`flex flex-col rounded-2xl border bg-white shadow-sm snap-start transition-colors ${isOver ? 'border-teal ring-2 ring-teal/20' : 'border-slate-200/80'}`}
                       onDragOver={(e) => handleDragOver(e, stage)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, stage)}
                     >
                       {/* Column header */}
-                      <div className={`${style.header} px-3 py-2.5 flex items-center justify-between`}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white tracking-wide">
-                            {STAGE_SHORT[stage] || stage}
-                          </span>
+                      <div className="px-3 py-2.5 flex items-center justify-between border-b border-slate-100">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${style.dot}`} />
+                          <span className="text-xs font-bold text-ink truncate">{STAGE_SHORT[stage] || stage}</span>
+                          {overdueCount > 0 && (
+                            <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full leading-none">
+                              {overdueCount} overdue
+                            </span>
+                          )}
                         </div>
-                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${style.badge}`}>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[22px] text-center ${style.badge}`}>
                           {columnCases.length}
                         </span>
                       </div>
 
-                      {/* Drop zone body */}
-                      <div
-                        className={`flex-1 p-2 space-y-2 transition-colors min-h-[400px] ${
-                          isOver
-                            ? 'bg-teal-soft border-2 border-dashed border-blue-300'
-                            : 'bg-slate-50/70'
-                        }`}
-                      >
-                        {isOver && columnCases.length === 0 && (
-                          <div className="flex items-center justify-center h-16 rounded-xl border-2 border-dashed border-blue-300 text-xs text-blue-400 font-medium">
-                            Drop here
+                      {/* Drop zone body: scrolls inside the column so the page stays a fixed height */}
+                      <div className={`flex-1 p-2 space-y-2 min-h-[160px] max-h-[65vh] overflow-y-auto rounded-b-2xl ${isOver ? 'bg-teal-soft' : 'bg-slate-50/70'}`}>
+                        {columnCases.length === 0 && (
+                          <div className={`flex items-center justify-center h-16 rounded-xl border-2 border-dashed text-xs font-medium ${isOver ? 'border-teal text-teal' : 'border-slate-200 text-slate-400'}`}>
+                            {isOver ? 'Drop here' : boardSearch ? 'No matches' : 'Nothing here'}
                           </div>
                         )}
                         {columnCases.map((labCase) => {
                           const isDragging = dragCaseId === labCase.id;
                           const isSaving = savingCaseId === labCase.id;
                           const isExpanded = activeWorkflowCaseId === labCase.id;
-                          const isOverdue = labCase.due_date && new Date(labCase.due_date) < new Date() && !labCase.workflow_snapshot?.is_closed;
+                          const closed = isClosed(labCase);
+                          const due = describeDue(labCase.due_date, now);
+                          const stageDays = daysAtStage(labCase, now);
+                          const currentStage = labCase.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT;
+                          const next = nextLabStage(currentStage);
 
                           return (
                             <div
@@ -521,62 +613,73 @@ function LabContent() {
                               draggable={!isSaving}
                               onDragStart={(e) => handleDragStart(e, labCase.id)}
                               onDragEnd={handleDragEnd}
-                              className={`
-                                rounded-xl border bg-white shadow-sm select-none
-                                border-l-4 ${style.cardBorder}
-                                transition-all duration-150
-                                ${isDragging ? 'opacity-40 scale-95 cursor-grabbing' : 'cursor-grab hover:shadow-md hover:-translate-y-0.5'}
-                                ${isSaving ? 'opacity-60 pointer-events-none' : ''}
-                              `}
+                              className={`rounded-xl border border-slate-200 bg-white shadow-sm select-none border-l-4 ${style.cardBorder} transition-all duration-150 ${
+                                isDragging ? 'opacity-40 scale-95 cursor-grabbing' : 'cursor-grab hover:shadow-md'
+                              } ${isSaving ? 'opacity-60 pointer-events-none' : ''}`}
                             >
                               <div className="p-3">
-                                {/* Case number + closed badge */}
-                                <div className="flex items-start justify-between gap-1 mb-1.5">
-                                  <span className="text-[11px] font-bold text-slate-700 leading-tight">{labCase.case_number}</span>
-                                  <div className="flex flex-col items-end gap-1">
-                                    {labCase.workflow_snapshot?.is_closed && (
-                                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full leading-none">Done</span>
-                                    )}
-                                    {isOverdue && (
-                                      <span className="text-[9px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full leading-none">Overdue</span>
-                                    )}
-                                  </div>
+                                {/* Patient + case number */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <Link href={`/patients/${labCase.patient_id}`} className="text-[13px] font-semibold text-ink leading-tight hover:text-teal truncate">
+                                    {labCase.patient_name}
+                                  </Link>
+                                  <span className="text-[10px] font-semibold text-slate-400 flex-shrink-0">{labCase.case_number}</span>
                                 </div>
-
-                                {/* Patient name */}
-                                <p className="text-xs font-semibold text-slate-900 leading-tight">{labCase.patient_name}</p>
-
-                                {/* Case type + lab */}
-                                <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{labCase.case_type}</p>
-                                <p className="text-[11px] text-slate-400 leading-tight">{labCase.lab_name}</p>
-
-                                {/* Shade */}
-                                {labCase.shade && (
-                                  <p className="text-[11px] text-violet-600 font-semibold mt-1">Shade: {labCase.shade}</p>
-                                )}
-
-                                {/* Due date */}
-                                <p className={`text-[11px] mt-1 leading-tight ${isOverdue ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
-                                  Due: {labCase.due_date ? formatDateSA(labCase.due_date) : '-'}
+                                <p className="text-[11px] text-slate-500 mt-0.5 leading-tight truncate">
+                                  {labCase.case_type}{labCase.lab_name ? ` · ${labCase.lab_name}` : ''}
                                 </p>
 
-                                {/* Recall warning */}
-                                {labCase.workflow_snapshot?.requires_recall && (
-                                  <p className="text-[10px] font-bold text-amber-600 mt-1.5">⚠ Recall required</p>
-                                )}
+                                {/* Chips */}
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {closed ? (
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                      Delivered {labCase.closed_at ? formatDateSA(labCase.closed_at) : ''}
+                                    </span>
+                                  ) : (
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${DUE_TONE_CLASS[due.tone]}`}>
+                                      {due.text}{labCase.due_date && due.tone !== 'today' ? ` · ${formatDateSA(labCase.due_date)}` : ''}
+                                    </span>
+                                  )}
+                                  {labCase.shade && (
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-slate-50 text-slate-600 border-slate-200">
+                                      Shade {labCase.shade}
+                                    </span>
+                                  )}
+                                  {!closed && stageDays != null && stageDays >= 1 && (
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-slate-50 text-slate-500 border-slate-200">
+                                      {stageDays}d here
+                                    </span>
+                                  )}
+                                  {labCase.workflow_snapshot?.requires_recall && (
+                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                                      Recall
+                                    </span>
+                                  )}
+                                </div>
 
-                                {isSaving && (
-                                  <p className="text-[10px] text-blue-500 mt-1 font-medium animate-pulse">Saving...</p>
-                                )}
-
-                                {/* Log event button */}
-                                <button
-                                  onClick={() => isExpanded ? closeWorkflowForm() : openWorkflowForm(labCase)}
-                                  disabled={isSaving}
-                                  className="mt-2 w-full text-[11px] font-medium text-slate-500 hover:text-teal hover:bg-cream py-1 px-2 rounded-lg transition-colors border border-slate-100 hover:border-teal/30"
-                                >
-                                  {isExpanded ? 'Cancel' : 'Log event →'}
-                                </button>
+                                {/* Actions */}
+                                <div className="flex items-center gap-1.5 mt-2.5">
+                                  {next && !closed && (
+                                    <button
+                                      type="button"
+                                      onClick={() => moveCaseToStage(labCase.id, next)}
+                                      disabled={isSaving}
+                                      className="flex-1 text-[11px] font-semibold text-white bg-navy-800 hover:bg-ink py-1.5 px-2 rounded-lg transition-colors disabled:opacity-60"
+                                    >
+                                      {isSaving ? 'Saving…' : `${NEXT_STAGE_ACTION[currentStage] || 'Next stage'} →`}
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => isExpanded ? closeWorkflowForm() : openWorkflowForm(labCase)}
+                                    disabled={isSaving}
+                                    className={`text-[11px] font-medium py-1.5 px-2.5 rounded-lg border transition-colors ${next && !closed ? '' : 'flex-1'} ${
+                                      isExpanded ? 'border-teal text-teal bg-teal-soft' : 'border-slate-200 text-slate-500 hover:text-teal hover:border-teal/40'
+                                    }`}
+                                  >
+                                    {isExpanded ? 'Cancel' : 'Log event'}
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Inline event form */}
@@ -619,6 +722,16 @@ function LabContent() {
                             </div>
                           );
                         })}
+
+                        {isDeliveredColumn && !showAllDelivered && olderDeliveredCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllDelivered(true)}
+                            className="w-full text-[11px] font-medium text-slate-500 hover:text-teal py-2 rounded-xl border border-dashed border-slate-200 hover:border-teal/40 transition-colors"
+                          >
+                            Show {olderDeliveredCount} older delivered
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -629,19 +742,24 @@ function LabContent() {
         )}
       </div>
 
-      {/* All Lab Cases list */}
+      {/* Case history */}
       <div className="max-w-7xl mx-auto">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
-            <CardTitle className="text-base">All Lab Cases</CardTitle>
-            <CardDescription className="text-xs">{loading ? 'Loading...' : `${labCases.length} total cases`}</CardDescription>
+            <CardTitle className="text-base">Case history</CardTitle>
+            <CardDescription className="text-xs">
+              {loading ? 'Loading...' : boardSearch ? `${historyCases.length} of ${labCases.length} cases match “${boardSearch.trim()}”` : `${labCases.length} total cases`}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-8 text-slate-500 text-sm">Loading lab cases...</div>
             ) : (
               <div className="space-y-3">
-                {labCases.map((labCase) => {
+                {visibleHistory.length === 0 && (
+                  <p className="text-center py-8 text-slate-500 text-sm">No cases found</p>
+                )}
+                {visibleHistory.map((labCase) => {
                   const isOpen = activeWorkflowCaseId === labCase.id;
                   const timeline = labCase.workflow_snapshot?.timeline || [];
                   const style = COLUMN_STYLE[labCase.workflow_stage] || COLUMN_STYLE[LAB_WORKFLOW_STAGE.NEW_PATIENT];
@@ -651,7 +769,7 @@ function LabContent() {
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex-1">
                           <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${style.header}`}>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${style.chip}`}>
                               {stageLabel(labCase.workflow_stage || LAB_WORKFLOW_STAGE.NEW_PATIENT)}
                             </span>
                             {labCase.workflow_snapshot?.requires_recall && (
@@ -669,7 +787,7 @@ function LabContent() {
                             Lab: {labCase.lab_name} · Due: {labCase.due_date ? formatDateSA(labCase.due_date) : '-'}
                             {labCase.expected_return_date ? ` · Expected: ${formatDateSA(labCase.expected_return_date)}` : ''}
                           </p>
-                          {labCase.shade && <p className="text-sm text-violet-600 font-medium mt-1">Shade: {labCase.shade}</p>}
+                          {labCase.shade && <p className="text-sm text-slate-600 font-medium mt-1">Shade: {labCase.shade}</p>}
                           {labCase.description && <p className="text-sm text-slate-600 mt-1">{labCase.description}</p>}
                           {labCase.slip_text && <p className="text-xs text-slate-400 mt-1">Slip: {labCase.slip_text}</p>}
                           {timeline.length > 0 && (
@@ -693,7 +811,6 @@ function LabContent() {
                           </Button>
                         </div>
                       </div>
-
                       {isOpen && workflowForm && (
                         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -748,6 +865,17 @@ function LabContent() {
                   );
                 })}
               </div>
+            )}
+            {!loading && (
+              <PaginationFooter
+                page={currentHistoryPage}
+                pageSize={historyPageSize}
+                count={historyCases.length}
+                onPageChange={setHistoryPage}
+                onPageSizeChange={changeHistoryPageSize}
+                noun="cases"
+                className="-mx-6 -mb-6 mt-3"
+              />
             )}
           </CardContent>
         </Card>

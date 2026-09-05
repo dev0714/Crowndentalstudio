@@ -926,10 +926,10 @@ function PatientDetailContent() {
       <div className="min-h-full bg-cream">
 
         {/* Patient Hero Header */}
-        <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 px-6 lg:px-8 pt-6 pb-0">
+        <div className="bg-gradient-to-r from-ink to-navy-800 px-4 sm:px-6 lg:px-8 pt-6 pb-0">
           <div className="max-w-7xl mx-auto">
             {/* Back + actions row */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
               <button
                 onClick={() => router.push('/patients')}
                 className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors"
@@ -1004,7 +1004,7 @@ function PatientDetailContent() {
         </div>
 
         {error && (
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
             <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-red-700 text-sm">{error}</p>
             </div>
@@ -1012,7 +1012,7 @@ function PatientDetailContent() {
         )}
 
         {/* Tab content */}
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
 
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
@@ -1036,7 +1036,7 @@ function PatientDetailContent() {
                 <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
                   <CardTitle className="text-base">Personal Information</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 sm:p-6 space-y-4">
                   {['first_name', 'last_name', 'id_number', 'date_of_birth', 'gender'].map((field) => (
                     <div key={field}>
                       <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{field.replace(/_/g, ' ')}</label>
@@ -1065,7 +1065,7 @@ function PatientDetailContent() {
                 <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
                   <CardTitle className="text-base">Contact Information</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 sm:p-6 space-y-4">
                   {['email', 'phone', 'mobile', 'emergency_contact_name', 'emergency_contact_phone'].map((field) => (
                     <div key={field}>
                       <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{field.replace(/_/g, ' ')}</label>
@@ -1083,7 +1083,7 @@ function PatientDetailContent() {
                 <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
                   <CardTitle className="text-base">Address & Preferences</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <CardContent className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
                   {['address', 'city', 'postal_code'].map((field) => (
                     <div key={field}>
                       <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{field.replace(/_/g, ' ')}</label>
@@ -1189,7 +1189,7 @@ function PatientDetailContent() {
                         <CardTitle className="text-base text-emerald-800">{medicalAid.scheme_name}</CardTitle>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-6 grid grid-cols-2 gap-5">
+                    <CardContent className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
                       {[
                         { label: 'Member Number', value: medicalAid.member_number },
                         { label: 'Dependent Code', value: medicalAid.dependent_code || '—' },
@@ -1272,7 +1272,7 @@ function PatientDetailContent() {
               <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
                 <CardTitle className="text-base">Communication Preferences</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 {consents.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {consents.map((consent) => (
@@ -1714,7 +1714,7 @@ function PatientDetailContent() {
                 {labCases.length > 0 ? labCases.map((labCase) => (
                   <div key={labCase.id} className="flex items-start justify-between p-4 bg-white rounded-2xl border border-slate-200 border-l-4 border-l-violet-400">
                     <div><p className="text-sm font-bold text-slate-900">{labCase.case_number}</p><p className="text-sm text-slate-600 mt-0.5">{labCase.description}</p><p className="text-xs text-slate-500 mt-0.5">{formatDateSA(labCase.date)}</p></div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
                       <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">{labCase.status}</span>
                       <Button onClick={() => deleteLabCase(labCase.id)} variant="outline" size="sm" className="border-slate-200 hover:border-red-200 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></Button>
                     </div>
@@ -1730,7 +1730,7 @@ function PatientDetailContent() {
               <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
                 <CardTitle className="text-base">Communications</CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-5">
+              <CardContent className="p-4 sm:p-6 space-y-5">
                 <div className="bg-teal-soft border border-hairline p-5 rounded-2xl space-y-3">
                   <h3 className="text-sm font-bold text-ink">Record Message</h3>
                   <select value={messageFormData.message_type} onChange={(e) => setMessageFormData({...messageFormData, message_type: e.target.value})} className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal/30">

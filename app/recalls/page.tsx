@@ -98,9 +98,9 @@ function RecallsContent() {
   const items = queue?.items || [];
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Recalls & Treatment Reviews</h1>
             <p className="text-slate-500 text-sm mt-0.5">Track routine recalls, treatment reviews, and procedure follow-ups</p>

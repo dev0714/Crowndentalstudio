@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AppShell } from '@/components/app-shell'
@@ -21,6 +21,13 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: 'Crown Dental Studio | Expert Dental Care in Durban',
   description: 'Comprehensive dental services in Durban - cosmetic, restorative, and specialized care for all ages.',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0b1f3a',
 }
 
 export default function RootLayout({

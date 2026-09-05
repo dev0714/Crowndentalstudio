@@ -86,7 +86,7 @@ function StockContent() {
   };
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Stock Control</h1>
@@ -192,7 +192,7 @@ function StockContent() {
                         {location.itemCount} items
                       </span>
                     </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-slate-600">
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600">
                       <div>
                         <p className="font-semibold text-slate-900">{location.totalQuantity}</p>
                         <p>Total qty</p>
@@ -221,12 +221,12 @@ function StockContent() {
           </div>
         )}
 
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-wrap gap-3 sm:gap-4 mb-6">
           <Input
             placeholder="Search stock items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="w-full sm:max-w-sm"
           />
           <Button className="bg-navy-800 hover:bg-ink border-0 shadow-md">Add Stock Item</Button>
         </div>
@@ -283,7 +283,7 @@ function StockContent() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[960px]">
                   <thead className="border-b-2 border-slate-200">
                     <tr>
                       <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Code</th>

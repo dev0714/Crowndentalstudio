@@ -59,11 +59,11 @@ function PatientsContent() {
   );
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
 
         {/* Page header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Patients</h1>
             <p className="text-slate-500 text-sm mt-0.5">Manage patient records and information</p>
@@ -110,7 +110,7 @@ function PatientsContent() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[720px]">
                   <thead>
                     <tr className="border-b border-slate-100">
                       <th className="text-left py-3 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>

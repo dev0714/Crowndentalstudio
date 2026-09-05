@@ -149,15 +149,15 @@ function OperationsPageContent() {
           ];
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Operations Control Center</h1>
             <p className="text-slate-500 text-sm mt-0.5">Role-aware dashboards, registers, timelines, and risk signals</p>
             {user && <p className="text-xs text-slate-400 mt-1">Signed in as {user.full_name} ({user.role})</p>}
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="text-xs uppercase tracking-wider text-slate-400 font-bold">Navigation</p>
             <p className="text-sm text-slate-700">{PORTAL_NAV_ITEMS.length} portal sections available</p>
           </div>
@@ -234,7 +234,7 @@ function OperationsPageContent() {
               </Button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[720px]">
                 <thead className="border-b-2 border-slate-200">
                   <tr>
                     <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Label</th>

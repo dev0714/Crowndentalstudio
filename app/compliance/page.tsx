@@ -100,9 +100,9 @@ function CompliancePageContent() {
     value ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500';
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Compliance Vault</h1>
             <p className="text-slate-500 text-sm mt-0.5">Review communication consent and signed compliance records</p>
@@ -159,7 +159,7 @@ function CompliancePageContent() {
               <p className="text-slate-600 py-8 text-center">Loading communication consents...</p>
             ) : communicationConsents.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[960px] text-sm">
                   <thead className="border-b-2 border-slate-200">
                     <tr>
                       <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Patient</th>

@@ -53,7 +53,7 @@ function HRPageContent() {
   );
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">HR Compliance</h1>
@@ -101,7 +101,7 @@ function HRPageContent() {
               <div className="py-8 text-center text-slate-600">Loading staff profiles...</div>
             ) : filteredStaff.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[720px]">
                   <thead className="border-b-2 border-slate-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>

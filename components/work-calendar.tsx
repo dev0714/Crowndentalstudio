@@ -92,7 +92,7 @@ export function WorkCalendar({ items, today, loading }: { items: WorkItem[]; tod
   const monthKey = `${view.year}-${String(view.monthIndex + 1).padStart(2, '0')}`;
   const monthItems = items.filter((item) => item.date.startsWith(monthKey));
   const monthOverdue = monthItems.filter((item) => item.status === 'overdue').length;
-  const selectedItems = byDay[selected] || [];
+  const selectedItems: WorkItem[] = byDay[selected] || [];
 
   const shift = (delta: number) => {
     setView((current) => {
@@ -152,7 +152,7 @@ export function WorkCalendar({ items, today, loading }: { items: WorkItem[]; tod
         </div>
         <div className="grid grid-cols-7 gap-1">
           {cells.map((cell) => {
-            const dayItems = byDay[cell.key] || [];
+            const dayItems: WorkItem[] = byDay[cell.key] || [];
             const overdue = dayItems.some((item) => item.status === 'overdue');
             const isToday = cell.key === today;
             const isSelected = cell.key === selected;

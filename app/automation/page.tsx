@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDateSA } from '@/lib/sa-formatting';
 import { PaginationFooter } from '@/components/pagination-footer';
 import { describeRange, sliceForPage } from '@/lib/pagination';
@@ -90,6 +91,7 @@ function AutomationContent() {
   const [pageSize, setPageSize] = useState(10);
   const [feedPage, setFeedPage] = useState(1);
   const [feedPageSize, setFeedPageSize] = useState(10);
+  const [activeTab, setActiveTab] = useState<'queue' | 'feed'>('queue');
 
   const queue = automation?.queue || null;
   const events = automation?.events || null;
@@ -266,6 +268,19 @@ function AutomationContent() {
           })}
         </div>
 
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'queue' | 'feed')}>
+          <TabsList className="h-auto bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+            <TabsTrigger value="queue" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Action queue
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : allItems.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="feed" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">
+              Automation feed
+              <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : feedItems.length}</span>
+            </TabsTrigger>
+          </TabsList>
+
+        <TabsContent value="queue">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <div className="flex flex-col gap-3">
@@ -433,7 +448,9 @@ function AutomationContent() {
             )}
           </CardContent>
         </Card>
+        </TabsContent>
 
+        <TabsContent value="feed">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Automation Feed</CardTitle>
@@ -488,6 +505,8 @@ function AutomationContent() {
             )}
           </CardContent>
         </Card>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

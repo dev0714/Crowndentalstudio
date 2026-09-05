@@ -57,7 +57,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-3" aria-label="Crown Dental Studio home">
             <Logo variant="icon" className={`h-9 w-auto transition-[filter] duration-500 ${solid ? '' : 'brightness-0 invert'}`} />
-            <span className={`font-display text-[22px] leading-none font-medium ${text}`}>Crown Dental Studio</span>
+            <span className={`font-display text-[19px] sm:text-[22px] leading-none font-medium ${text}`}>Crown Dental Studio</span>
           </Link>
 
           {/* Desktop */}

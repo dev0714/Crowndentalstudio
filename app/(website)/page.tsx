@@ -70,15 +70,16 @@ export default function Home() {
         </KenBurns>
         <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/55 to-ink/10" aria-hidden="true" />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/35 via-transparent to-ink/50" aria-hidden="true" />
+        <div className="absolute inset-0 bg-ink/45 sm:hidden" aria-hidden="true" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-40 pb-24 md:pt-52 md:pb-32">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-16 sm:pt-40 sm:pb-24 md:pt-52 md:pb-32">
           <FadeUp delay={0}>
             <Eyebrow className="text-teal-light mb-6">Family &amp; cosmetic dentistry · Durban North</Eyebrow>
           </FadeUp>
 
           <RevealLines
             as="h1"
-            className="font-display font-medium text-white text-[56px] sm:text-[72px] lg:text-[96px] xl:text-[104px] leading-[0.98] tracking-tight max-w-[820px]"
+            className="font-display font-medium text-white text-[44px] sm:text-[64px] lg:text-[96px] xl:text-[104px] leading-[1.02] sm:leading-[0.98] tracking-tight max-w-[820px]"
             lines={[
               'Care you can feel',
               <><em className="italic font-normal text-[#CFEDED]">confident</em> about.</>,
@@ -86,13 +87,13 @@ export default function Home() {
           />
 
           <FadeUp delay={650}>
-            <p className="mt-8 max-w-[520px] text-lg leading-relaxed text-white/80">
+            <p className="mt-6 sm:mt-8 max-w-[520px] text-base sm:text-lg leading-relaxed text-white/80">
               Over twenty years of gentle, modern dentistry on Mackeurtan Avenue — from routine check-ups to complete smile restorations.
             </p>
           </FadeUp>
 
           <FadeUp delay={850}>
-            <div className="mt-10 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <Link
                 href="/contact"
                 className="inline-flex items-center justify-center h-[52px] px-7 rounded-full bg-white text-navy-800 font-semibold text-[15px] hover:bg-cream transition-colors"
@@ -110,7 +111,7 @@ export default function Home() {
           </FadeUp>
 
           <FadeUp delay={1050}>
-            <div className="mt-14 flex items-center gap-2.5 text-[13px] text-white/70">
+            <div className="mt-10 sm:mt-14 flex items-center gap-2.5 text-[13px] text-white/70">
               <span className="w-2 h-2 rounded-full bg-teal-light shadow-[0_0_0_4px_rgba(94,234,212,0.2)]" aria-hidden="true" />
               24-hour on-call line for dental emergencies
             </div>
@@ -134,7 +135,7 @@ export default function Home() {
                   i === 1 ? 'lg:border-r' : '',
                   i === 2 ? 'lg:border-r lg:pr-8 lg:pl-8' : '',
                 ].join(' ')}
-                numberClassName="font-display text-5xl lg:text-[64px] leading-none text-teal"
+                numberClassName="font-display text-[40px] sm:text-5xl lg:text-[64px] leading-none text-teal"
                 labelClassName="mt-2.5 text-sm text-muted-ink"
               />
             ))}
@@ -155,7 +156,7 @@ export default function Home() {
           <FadeInUp delay={0.15}>
             <Eyebrow>Our approach</Eyebrow>
             <div className="rule-draw w-14 h-px bg-teal mt-4 mb-7" aria-hidden="true" />
-            <h2 className="font-display font-medium text-ink text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] mb-8">Unhurried, honest dentistry.</h2>
+            <h2 className="font-display font-medium text-ink text-[34px] sm:text-5xl lg:text-[56px] leading-[1.05] mb-8">Unhurried, honest dentistry.</h2>
             <div className="divide-y divide-hairline border-y border-hairline">
               {[
                 ['We explain before we treat.', 'Every option, cost and alternative is walked through with you first — no surprises in the chair.'],
@@ -180,7 +181,7 @@ export default function Home() {
           <FadeInUp className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
             <div>
               <Eyebrow>Treatments</Eyebrow>
-              <h2 className="font-display font-medium text-ink text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] mt-4">
+              <h2 className="font-display font-medium text-ink text-[34px] sm:text-5xl lg:text-[56px] leading-[1.05] mt-4">
                 Everything your smile needs,<br className="hidden md:block" /> under one roof.
               </h2>
             </div>
@@ -193,7 +194,7 @@ export default function Home() {
             {treatments.map((t) => (
               <StaggerItem key={t.name} className={t.image ? '' : 'bg-cream p-9 min-h-[220px]'}>
                 {t.image && (
-                  <div className="relative h-[300px] overflow-hidden mb-6">
+                  <div className="relative h-[240px] sm:h-[300px] overflow-hidden mb-6">
                     <Image src={t.image} alt="" fill sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" className="object-cover transition-transform duration-700 ease-out hover:scale-[1.04]" />
                   </div>
                 )}
@@ -211,7 +212,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
           <FadeInUp className="lg:col-span-5 lg:sticky lg:top-28 self-start">
             <Eyebrow>Why Crown Dental</Eyebrow>
-            <h2 className="font-display font-medium text-ink text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] mt-4 mb-5">A practice built<br />around you.</h2>
+            <h2 className="font-display font-medium text-ink text-[34px] sm:text-5xl lg:text-[56px] leading-[1.05] mt-4 mb-5">A practice built<br />around you.</h2>
             <p className="text-base leading-relaxed text-muted-ink max-w-[380px]">
               Over twenty years on the same street, one team, and a simple promise: you will always know what is happening and why.
             </p>
@@ -235,12 +236,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeInUp>
             <Eyebrow>Your dentists</Eyebrow>
-            <h2 className="font-display font-medium text-ink text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] mt-4 mb-14">Meet the team.</h2>
+            <h2 className="font-display font-medium text-ink text-[34px] sm:text-5xl lg:text-[56px] leading-[1.05] mt-4 mb-14">Meet the team.</h2>
           </FadeInUp>
           <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-7">
             {team.map((member) => (
               <StaggerItem key={member.name} className="group">
-                <div className="relative h-[360px] lg:h-[420px] overflow-hidden bg-hairline">
+                <div className="relative h-[360px] sm:h-[260px] md:h-[320px] lg:h-[420px] overflow-hidden bg-hairline">
                   <Image src={member.image} alt={member.name} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover grayscale-[15%] transition-[filter,transform] duration-700 ease-out group-hover:grayscale-0 group-hover:scale-[1.03]" />
                 </div>
                 <h3 className="font-display font-medium text-ink text-[30px] leading-tight mt-6 mb-1">{member.name}</h3>
@@ -252,7 +253,7 @@ export default function Home() {
       </section>
 
       {/* ─── TESTIMONIAL (pinned; the next band slides over it) ───── */}
-      <section className="quote-pin sticky top-0 z-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 text-center">
+      <section className="quote-pin lg:sticky lg:top-0 z-0 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 text-center">
         <FadeInUp>
           <div className="rule-draw w-14 h-px bg-teal mx-auto mb-9" aria-hidden="true" />
           <blockquote className="font-display italic font-normal text-ink text-3xl sm:text-4xl lg:text-[44px] leading-[1.25] max-w-[900px] mx-auto">
@@ -266,7 +267,7 @@ export default function Home() {
       <section className="relative z-10 bg-ink text-white py-24 lg:py-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24 items-center">
           <FadeInUp className="lg:col-span-7">
-            <h2 className="font-display font-medium text-white text-4xl sm:text-5xl lg:text-[64px] leading-[1.02] mb-6">Ready for a healthier smile?</h2>
+            <h2 className="font-display font-medium text-white text-[36px] sm:text-5xl lg:text-[64px] leading-[1.02] mb-6">Ready for a healthier smile?</h2>
             <p className="text-[17px] leading-relaxed text-white/75 max-w-[520px] mb-10">Book online in a minute, or call us and we’ll find a time that suits you.</p>
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <Link href="/contact" className="inline-flex items-center justify-center h-[52px] px-7 rounded-full bg-white text-navy-800 font-semibold text-[15px] hover:bg-cream transition-colors">Book an appointment</Link>

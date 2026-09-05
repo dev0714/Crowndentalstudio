@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPhoneSA, formatDateSA } from '@/lib/sa-formatting';
+import { describeRange, getPageWindow } from '@/lib/patients/patient-list-query';
 
 interface Patient {
   id: string;
@@ -18,52 +20,86 @@ interface Patient {
   created_at: string;
 }
 
+const PAGE_SIZES = [10, 20, 50];
+const DEFAULT_PAGE_SIZE = 20;
+
 function PatientsContent() {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') ?? '';
+
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [query, setQuery] = useState(initialSearch.trim());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /* debounce the filter box into the query that hits the server; a new query starts at page 1 */
+  const queryRef = useRef(query);
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const response = await fetch('/api/crm/patients?limit=100', {
-          credentials: 'include',
-        });
+    const handle = setTimeout(() => {
+      const next = searchTerm.trim();
+      if (next === queryRef.current) return;
+      queryRef.current = next;
+      setQuery(next);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [searchTerm]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPatients = async () => {
+      setRefreshing(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({ page: String(page), limit: String(pageSize) });
+        if (query) params.set('search', query);
+        const response = await fetch(`/api/crm/patients?${params.toString()}`, { credentials: 'include' });
+        const payload = await response.json().catch(() => ({}));
+        if (cancelled) return;
         if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          console.error('[v0] Fetch error:', payload);
           setError(payload.error || 'Failed to load patients');
         } else {
-          const payload = await response.json();
           setPatients(payload.data || []);
+          setCount(typeof payload.count === 'number' ? payload.count : (payload.data || []).length);
         }
       } catch (err) {
-        console.error('[v0] Error fetching patients:', err);
+        if (cancelled) return;
+        console.error('[patients] Error fetching patients:', err);
         setError('Failed to load patients');
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
 
     fetchPatients();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [page, pageSize, query]);
 
-  const filteredPatients = patients.filter(
-    (p) =>
-      p.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const { from, to, pageCount } = describeRange(page, pageSize, count);
+  const pageWindow = getPageWindow(page, pageCount);
+
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
 
         {/* Page header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Patients</h1>
             <p className="text-slate-500 text-sm mt-0.5">Manage patient records and information</p>
@@ -79,7 +115,7 @@ function PatientsContent() {
         {/* Search */}
         <div className="relative max-w-sm">
           <Input
-            placeholder="Filter by name or email..."
+            placeholder="Filter by name, email or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-4 bg-white border-slate-200"
@@ -99,78 +135,145 @@ function PatientsContent() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Patient Records</CardTitle>
               <CardDescription className="text-xs">
-                {loading ? 'Loading...' : `${filteredPatients.length} patients`}
+                {loading ? 'Loading...' : refreshing ? 'Updating…' : `${count} patient${count === 1 ? '' : 's'}`}
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-teal border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px]">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="text-left py-3 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Email</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Phone</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
-                      <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Added</th>
-                      <th className="py-3 px-4" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPatients.length > 0 ? (
-                      filteredPatients.map((patient) => (
-                        <tr key={patient.id} className="border-b border-slate-50 hover:bg-cream/40 transition-colors">
-                          <td className="py-3 px-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold shadow-sm">
-                                {patient.first_name?.[0]}{patient.last_name?.[0]}
+              <>
+                <div className={`overflow-x-auto transition-opacity ${refreshing ? 'opacity-60' : ''}`}>
+                  <table className="w-full min-w-[720px]">
+                    <thead>
+                      <tr className="border-b border-slate-100">
+                        <th className="text-left py-3 px-6 text-xs font-bold uppercase tracking-wider text-slate-400">Name</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Email</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Phone</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
+                        <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-slate-400">Added</th>
+                        <th className="py-3 px-4" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {patients.length > 0 ? (
+                        patients.map((patient) => (
+                          <tr key={patient.id} className="border-b border-slate-50 hover:bg-cream/40 transition-colors">
+                            <td className="py-3 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold shadow-sm">
+                                  {patient.first_name?.[0]}{patient.last_name?.[0]}
+                                </div>
+                                <span className="text-sm font-semibold text-slate-900">
+                                  {patient.first_name} {patient.last_name}
+                                </span>
                               </div>
-                              <span className="text-sm font-semibold text-slate-900">
-                                {patient.first_name} {patient.last_name}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-slate-600">{patient.email || '—'}</td>
+                            <td className="py-3 px-4 text-sm text-slate-600">{patient.phone ? formatPhoneSA(patient.phone) : '—'}</td>
+                            <td className="py-3 px-4">
+                              <span
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                                  patient.status === 'Active'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {patient.status}
                               </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-slate-600">{patient.email || '—'}</td>
-                          <td className="py-3 px-4 text-sm text-slate-600">{patient.phone ? formatPhoneSA(patient.phone) : '—'}</td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                                patient.status === 'Active'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-slate-100 text-slate-600'
-                              }`}
-                            >
-                              {patient.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm text-slate-500">{formatDateSA(patient.created_at)}</td>
-                          <td className="py-3 px-4">
-                            <Button
-                              onClick={() => router.push(`/patients/${patient.id}`)}
-                              variant="outline"
-                              size="sm"
-                              className="text-xs border-slate-200 hover:border-blue-300 hover:text-teal"
-                            >
-                              View →
-                            </Button>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-slate-500">{formatDateSA(patient.created_at)}</td>
+                            <td className="py-3 px-4">
+                              <Button
+                                onClick={() => router.push(`/patients/${patient.id}`)}
+                                variant="outline"
+                                size="sm"
+                                className="text-xs border-slate-200 hover:border-teal hover:text-teal"
+                              >
+                                View →
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="py-16 text-center text-slate-400 text-sm">
+                            {query ? `No patients match “${query}”` : 'No patients found'}
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="py-16 text-center text-slate-400 text-sm">
-                          No patients found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination footer */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 px-4 sm:px-6 py-3">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <span>
+                      {count > 0 ? `Showing ${from}–${to} of ${count}` : 'No results'}
+                    </span>
+                    <label className="flex items-center gap-1.5">
+                      <span>Per page</span>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => changePageSize(Number(e.target.value))}
+                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
+                      >
+                        {PAGE_SIZES.map((size) => (
+                          <option key={size} value={size}>{size}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  {pageCount > 1 && (
+                    <nav aria-label="Pagination" className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2 border-slate-200"
+                        disabled={page <= 1 || refreshing}
+                        onClick={() => setPage((current) => Math.max(1, current - 1))}
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="hidden sm:inline">Prev</span>
+                      </Button>
+                      {pageWindow.map((item, index) =>
+                        item === 'gap' ? (
+                          <span key={`gap-${index}`} className="px-1 text-xs text-slate-400">…</span>
+                        ) : (
+                          <Button
+                            key={item}
+                            variant={item === page ? 'default' : 'outline'}
+                            size="sm"
+                            className={`h-8 min-w-8 px-2 text-xs ${item === page ? 'bg-navy-800 hover:bg-ink text-white border-0' : 'border-slate-200'}`}
+                            disabled={refreshing}
+                            onClick={() => setPage(item)}
+                            aria-current={item === page ? 'page' : undefined}
+                          >
+                            {item}
+                          </Button>
+                        ),
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2 border-slate-200"
+                        disabled={page >= pageCount || refreshing}
+                        onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
+                        aria-label="Next page"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </nav>
+                  )}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -182,7 +285,9 @@ function PatientsContent() {
 export default function PatientsPage() {
   return (
     <DashboardLayout>
-      <PatientsContent />
+      <Suspense fallback={null}>
+        <PatientsContent />
+      </Suspense>
     </DashboardLayout>
   );
 }

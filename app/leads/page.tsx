@@ -195,16 +195,18 @@ function LeadsContent() {
                     )}
                   </tbody>
                 </table>
-                <PaginationFooter
-                  page={currentPage}
-                  pageSize={pageSize}
-                  count={leads.length}
-                  onPageChange={setPage}
-                  onPageSizeChange={changePageSize}
-                  noun="leads"
-                  className="-mx-6 -mb-6 mt-2"
-                />
               </div>
+            )}
+            {!loading && (
+              <PaginationFooter
+                page={currentPage}
+                pageSize={pageSize}
+                count={leads.length}
+                onPageChange={setPage}
+                onPageSizeChange={changePageSize}
+                noun="leads"
+                className="-mx-6 -mb-6 mt-2"
+              />
             )}
           </CardContent>
         </Card>

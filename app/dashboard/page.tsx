@@ -1,63 +1,95 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { formatZAR, formatDateSA } from '@/lib/sa-formatting';
 import { usePortalSession } from '@/lib/auth/portal-session-context';
 import { OperationsRiskStrip } from '@/components/operations-risk-strip';
-import { Users, Calendar, CreditCard, FlaskConical, TrendingUp, ArrowUpRight, Clock, CheckCircle2 } from 'lucide-react';
+import { WorkCalendar, WorkItemRow } from '@/components/work-calendar';
+import type { WorkCalendar as WorkCalendarData } from '@/lib/dashboard/work-calendar';
+import { Users, Calendar, CreditCard, FlaskConical, AlertTriangle, ArrowUpRight, Clock, CheckCircle2 } from 'lucide-react';
 
-const STAT_CONFIG = [
-  {
-    title: 'Total Patients',
-    value: '245',
-    sub: '+12 this month',
-    icon: Users,
-    gradient: 'from-navy-800 to-ink',
-    badge: 'bg-teal/20 text-blue-100',
-  },
-  {
-    title: 'Appointments Today',
-    value: '8',
-    sub: '2 pending confirmation',
-    icon: Calendar,
-    gradient: 'from-[#3f4c7a] to-[#2c365c]',
-    badge: 'bg-violet-500/20 text-violet-100',
-  },
-  {
-    title: 'Outstanding',
-    value: formatZAR(5240),
-    sub: 'Medical aid pending',
-    icon: CreditCard,
-    gradient: 'from-[#b8742e] to-[#8f5a22]',
-    badge: 'bg-amber-500/20 text-amber-100',
-  },
-  {
-    title: 'Lab Cases Active',
-    value: '12',
-    sub: 'Ready in ~3 days',
-    icon: FlaskConical,
-    gradient: 'from-teal to-[#0b6f71]',
-    badge: 'bg-emerald-500/20 text-emerald-100',
-  },
-];
-
-const ACTIVITY = [
-  { name: 'Thabo Nkosi',      action: 'Appointment completed',  time: '9:15 AM',  status: 'done' },
-  { name: 'Priya Govender',   action: 'Checkup scheduled',      time: '10:00 AM', status: 'upcoming' },
-  { name: 'James Williams',   action: 'Invoice sent — R1 200',  time: '10:45 AM', status: 'invoice' },
-  { name: 'Ayesha Patel',     action: 'Lab case updated',       time: '11:30 AM', status: 'lab' },
-  { name: 'Michael van Zyl',  action: 'Appointment confirmed',  time: '12:00 PM', status: 'done' },
-];
-
-const statusDot: Record<string, string> = {
-  done:     'bg-emerald-400',
-  upcoming: 'bg-blue-400',
-  invoice:  'bg-amber-400',
-  lab:      'bg-violet-400',
+type DashboardSummary = {
+  totalPatients: number;
+  newPatientsThisMonth: number;
+  appointmentsToday: number;
+  appointmentsUpcoming: number;
+  outstandingBalance: number;
+  overdueInvoices: number;
+  openLabCases: number;
+  overdueLabCases: number;
 };
+
+type DashboardPayload = {
+  today: string;
+  summary: DashboardSummary;
+  calendar: WorkCalendarData;
+};
+
+const STAT_STYLE = [
+  { icon: Users, gradient: 'from-navy-800 to-ink', badge: 'bg-white/15 text-white' },
+  { icon: Calendar, gradient: 'from-[#3f4c7a] to-[#2c365c]', badge: 'bg-white/15 text-white' },
+  { icon: CreditCard, gradient: 'from-[#b8742e] to-[#8f5a22]', badge: 'bg-white/15 text-white' },
+  { icon: FlaskConical, gradient: 'from-teal to-[#0b6f71]', badge: 'bg-white/15 text-white' },
+];
+
+function statCards(summary: DashboardSummary | null) {
+  const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? '' : 's'}`;
+  return [
+    {
+      title: 'Active Patients',
+      value: summary ? String(summary.totalPatients) : '–',
+      sub: summary ? `+${summary.newPatientsThisMonth} this month` : '',
+      href: '/patients',
+    },
+    {
+      title: 'Appointments Today',
+      value: summary ? String(summary.appointmentsToday) : '–',
+      sub: summary ? `${summary.appointmentsUpcoming} upcoming` : '',
+      href: '/appointments',
+    },
+    {
+      title: 'Outstanding',
+      value: summary ? formatZAR(summary.outstandingBalance) : '–',
+      sub: summary ? plural(summary.overdueInvoices, 'overdue invoice') : '',
+      href: '/accounts',
+    },
+    {
+      title: 'Lab Cases Active',
+      value: summary ? String(summary.openLabCases) : '–',
+      sub: summary ? plural(summary.overdueLabCases, 'past due date') : '',
+      href: '/lab',
+    },
+  ];
+}
 
 function DashboardContent() {
   const { currentUser: user } = usePortalSession();
+  const [data, setData] = useState<DashboardPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await fetch('/api/crm/dashboard', { credentials: 'include' });
+        const payload = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!response.ok) throw new Error(payload.error || 'Failed to load dashboard');
+        setData(payload.data as DashboardPayload);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!user) {
     return (
@@ -70,6 +102,10 @@ function DashboardContent() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const today = new Date().toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
+  const todayKey = data?.today || new Date().toISOString().slice(0, 10);
+  const calendar = data?.calendar;
+  const outstanding = calendar?.outstanding || [];
+  const cards = statCards(data?.summary || null);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -89,28 +125,35 @@ function DashboardContent() {
         </span>
       </div>
 
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STAT_CONFIG.map((stat) => {
-          const Icon = stat.icon;
+        {cards.map((stat, index) => {
+          const style = STAT_STYLE[index];
+          const Icon = style.icon;
           return (
-            <div
+            <Link
               key={stat.title}
-              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${stat.gradient} p-5 text-white shadow-lg`}
+              href={stat.href}
+              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${style.gradient} p-5 text-white shadow-lg hover:shadow-xl transition-shadow`}
             >
               <div className="flex items-start justify-between mb-4">
-                <div className={`w-9 h-9 rounded-xl ${stat.badge} flex items-center justify-center`}>
+                <div className={`w-9 h-9 rounded-xl ${style.badge} flex items-center justify-center`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 <ArrowUpRight className="w-4 h-4 opacity-50" />
               </div>
-              <p className="text-3xl font-bold leading-none mb-1">{stat.value}</p>
+              <p className="text-3xl font-bold leading-none mb-1">{loading ? '–' : stat.value}</p>
               <p className="text-xs font-semibold opacity-75 leading-none mb-0.5">{stat.title}</p>
-              <p className="text-[11px] opacity-55">{stat.sub}</p>
-              {/* Decorative circle */}
+              <p className="text-[11px] opacity-55">{loading ? ' ' : stat.sub}</p>
               <div className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full bg-white/10" />
               <div className="absolute -right-1 -bottom-8 w-12 h-12 rounded-full bg-white/10" />
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -121,36 +164,38 @@ function DashboardContent() {
       {/* Content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <div>
-              <h2 className="font-bold text-slate-900 text-sm">Today&apos;s Activity</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Latest appointments and updates</p>
-            </div>
-            <TrendingUp className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="divide-y divide-slate-50">
-            {ACTIVITY.map((item, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-3.5 hover:bg-slate-50 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0 text-slate-700 text-[11px] font-bold">
-                  {item.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{item.name}</p>
-                  <p className="text-xs text-slate-500 truncate">{item.action}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs text-slate-400">{item.time}</span>
-                  <span className={`w-2 h-2 rounded-full ${statusDot[item.status]}`} />
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Work calendar */}
+        <div className="lg:col-span-2">
+          <WorkCalendar items={calendar?.items || []} today={todayKey} loading={loading} />
         </div>
 
         {/* Quick overview */}
         <div className="space-y-4">
+          {/* Outstanding work */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="font-bold text-slate-900 text-sm">Outstanding work</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {loading ? 'Loading…' : outstanding.length === 0 ? 'Nothing is past its date' : `${outstanding.length} item${outstanding.length === 1 ? '' : 's'} past due`}
+                </p>
+              </div>
+              <AlertTriangle className={`w-4 h-4 ${outstanding.length > 0 ? 'text-red-500' : 'text-slate-300'}`} />
+            </div>
+            {outstanding.length > 0 ? (
+              <div className="divide-y divide-slate-50 max-h-[26rem] overflow-y-auto">
+                {outstanding.map((item) => <WorkItemRow key={item.id} item={item} showDate />)}
+              </div>
+            ) : (
+              !loading && (
+                <div className="px-5 py-6 flex items-center gap-2 text-xs text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  All lab work, invoices and recalls are on time
+                </div>
+              )
+            )}
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100">
               <h2 className="font-bold text-slate-900 text-sm">Account Summary</h2>

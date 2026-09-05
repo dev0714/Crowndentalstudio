@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   LAB_WORKFLOW_EVENT_TYPE,
   type LabWorkflowEventType,
@@ -193,6 +194,7 @@ function LabContent() {
   const [dragCaseId, setDragCaseId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [boardSearch, setBoardSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'board' | 'history'>('board');
   const [showAllDelivered, setShowAllDelivered] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(10);
@@ -514,30 +516,48 @@ function LabContent() {
         </div>
       )}
 
-      {/* WORKFLOW BOARD */}
+      {/* BOARD / HISTORY TABS */}
       <div className="max-w-7xl mx-auto">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'board' | 'history')}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+            <TabsList className="h-auto bg-white border border-slate-200 rounded-full p-1 gap-0.5">
+              <TabsTrigger
+                value="board"
+                className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                Workflow board
+                <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : openCases.length}</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="history"
+                className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none"
+              >
+                Case history
+                <span className="ml-1.5 text-[10px] font-bold opacity-70">{loading ? '' : labCases.length}</span>
+              </TabsTrigger>
+            </TabsList>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              <Input
+                value={boardSearch}
+                onChange={(e) => setBoardSearch(e.target.value)}
+                placeholder="Search patient, case, lab, shade…"
+                className="pl-8 h-9 text-xs rounded-full bg-white border-slate-200"
+              />
+            </div>
+          </div>
+
+        <TabsContent value="board">
         {loading ? (
           <div className="flex items-center justify-center py-16 text-slate-500 text-sm">Loading lab workflow...</div>
         ) : (
           <>
             {/* Board toolbar */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Workflow board</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {openCases.length} open · {closedCases.length} delivered · drag a card or use its action button to move it
-                </p>
-              </div>
+              <p className="text-xs text-slate-400">
+                {openCases.length} open · {closedCases.length} delivered · drag a card or use its action button to move it
+              </p>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                  <Input
-                    value={boardSearch}
-                    onChange={(e) => setBoardSearch(e.target.value)}
-                    placeholder="Search patient, case, lab, shade…"
-                    className="pl-8 h-9 text-xs rounded-full bg-white border-slate-200"
-                  />
-                </div>
                 <div className="inline-flex rounded-full border border-slate-200 bg-white p-0.5 text-[11px] font-semibold">
                   <button
                     type="button"
@@ -740,10 +760,9 @@ function LabContent() {
             </div>
           </>
         )}
-      </div>
+        </TabsContent>
 
-      {/* Case history */}
-      <div className="max-w-7xl mx-auto">
+        <TabsContent value="history">
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
             <CardTitle className="text-base">Case history</CardTitle>
@@ -879,6 +898,8 @@ function LabContent() {
             )}
           </CardContent>
         </Card>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

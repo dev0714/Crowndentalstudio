@@ -2,13 +2,12 @@
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPhoneSA, formatDateSA } from '@/lib/sa-formatting';
-import { describeRange, getPageWindow } from '@/lib/patients/patient-list-query';
+import { PaginationFooter } from '@/components/pagination-footer';
 
 interface Patient {
   id: string;
@@ -20,7 +19,6 @@ interface Patient {
   created_at: string;
 }
 
-const PAGE_SIZES = [10, 20, 50];
 const DEFAULT_PAGE_SIZE = 20;
 
 function PatientsContent() {
@@ -85,9 +83,6 @@ function PatientsContent() {
       cancelled = true;
     };
   }, [page, pageSize, query]);
-
-  const { from, to, pageCount } = describeRange(page, pageSize, count);
-  const pageWindow = getPageWindow(page, pageCount);
 
   const changePageSize = (size: number) => {
     setPageSize(size);
@@ -209,70 +204,15 @@ function PatientsContent() {
                   </table>
                 </div>
 
-                {/* Pagination footer */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 px-4 sm:px-6 py-3">
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                    <span>
-                      {count > 0 ? `Showing ${from}–${to} of ${count}` : 'No results'}
-                    </span>
-                    <label className="flex items-center gap-1.5">
-                      <span>Per page</span>
-                      <select
-                        value={pageSize}
-                        onChange={(e) => changePageSize(Number(e.target.value))}
-                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal"
-                      >
-                        {PAGE_SIZES.map((size) => (
-                          <option key={size} value={size}>{size}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  {pageCount > 1 && (
-                    <nav aria-label="Pagination" className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2 border-slate-200"
-                        disabled={page <= 1 || refreshing}
-                        onClick={() => setPage((current) => Math.max(1, current - 1))}
-                        aria-label="Previous page"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span className="hidden sm:inline">Prev</span>
-                      </Button>
-                      {pageWindow.map((item, index) =>
-                        item === 'gap' ? (
-                          <span key={`gap-${index}`} className="px-1 text-xs text-slate-400">…</span>
-                        ) : (
-                          <Button
-                            key={item}
-                            variant={item === page ? 'default' : 'outline'}
-                            size="sm"
-                            className={`h-8 min-w-8 px-2 text-xs ${item === page ? 'bg-navy-800 hover:bg-ink text-white border-0' : 'border-slate-200'}`}
-                            disabled={refreshing}
-                            onClick={() => setPage(item)}
-                            aria-current={item === page ? 'page' : undefined}
-                          >
-                            {item}
-                          </Button>
-                        ),
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2 border-slate-200"
-                        disabled={page >= pageCount || refreshing}
-                        onClick={() => setPage((current) => Math.min(pageCount, current + 1))}
-                        aria-label="Next page"
-                      >
-                        <span className="hidden sm:inline">Next</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </Button>
-                    </nav>
-                  )}
-                </div>
+                <PaginationFooter
+                  page={page}
+                  pageSize={pageSize}
+                  count={count}
+                  onPageChange={setPage}
+                  onPageSizeChange={changePageSize}
+                  disabled={refreshing}
+                  noun="patients"
+                />
               </>
             )}
           </CardContent>

@@ -32,32 +32,4 @@ export function buildPatientSearchFilter(term: string): string | null {
   return ['first_name', 'last_name', 'email', 'phone'].map((column) => `${column}.ilike.${pattern}`).join(',');
 }
 
-/** "Showing from–to of count" numbers plus the total page count. */
-export function describeRange(page: number, limit: number, count: number) {
-  const pageCount = Math.max(1, Math.ceil(count / limit));
-  if (count === 0) return { from: 0, to: 0, pageCount };
-  const from = (page - 1) * limit + 1;
-  const to = Math.min(count, page * limit);
-  return { from, to, pageCount };
-}
-
-/**
- * Page numbers to show in the footer: always first and last, a window around the
- * current page, and 'gap' markers where pages are skipped.
- */
-export function getPageWindow(page: number, pageCount: number, width = 5): Array<number | 'gap'> {
-  if (pageCount <= width + 2) {
-    return Array.from({ length: pageCount }, (_, index) => index + 1);
-  }
-  const half = Math.floor(width / 2);
-  let start = Math.max(2, page - half);
-  let end = Math.min(pageCount - 1, start + width - 1);
-  start = Math.max(2, end - width + 1);
-
-  const pages: Array<number | 'gap'> = [1];
-  if (start > 2) pages.push('gap');
-  for (let index = start; index <= end; index += 1) pages.push(index);
-  if (end < pageCount - 1) pages.push('gap');
-  pages.push(pageCount);
-  return pages;
-}
+export { describeRange, getPageWindow } from '@/lib/pagination';

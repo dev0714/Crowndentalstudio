@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PaginationFooter } from '@/components/pagination-footer';
+import { describeRange, sliceForPage } from '@/lib/pagination';
 import { useSearchParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,6 +108,14 @@ function AppointmentsContent() {
     }));
   };
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  /* any filter change starts again from the first page */
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
   const filteredAppointments = appointments
     .filter((apt) => {
       if (filters.dateFrom && new Date(apt.appointment_date) < new Date(filters.dateFrom)) return false;
@@ -122,6 +132,14 @@ function AppointmentsContent() {
       if (aVal > bVal) return filters.sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
+
+  const { pageCount } = describeRange(page, pageSize, filteredAppointments.length);
+  const currentPage = Math.min(page, pageCount);
+  const visibleAppointments = sliceForPage<Appointment>(filteredAppointments, currentPage, pageSize);
+  const changePageSize = (size: number) => {
+    setPageSize(size);
+    setPage(1);
+  };
 
   const handleSort = (field: string) => {
     setFilters((prev) => ({
@@ -574,7 +592,7 @@ function AppointmentsContent() {
                 ) : (
                   <div className="space-y-3">
                     {filteredAppointments.length > 0 ? (
-                      filteredAppointments.map((apt) => (
+                      visibleAppointments.map((apt) => (
                         <div
                           key={apt.id}
                           className="flex items-start justify-between p-4 bg-slate-50 rounded hover:bg-slate-100 transition-colors border-l-4 border-slate-400 cursor-pointer"
@@ -613,6 +631,15 @@ function AppointmentsContent() {
                     ) : (
                       <p className="text-center py-8 text-slate-600">No appointments found</p>
                     )}
+                    <PaginationFooter
+                      page={currentPage}
+                      pageSize={pageSize}
+                      count={filteredAppointments.length}
+                      onPageChange={setPage}
+                      onPageSizeChange={changePageSize}
+                      noun="appointments"
+                      className="-mx-6 -mb-6 mt-4"
+                    />
                   </div>
                 )}
               </CardContent>

@@ -49,7 +49,58 @@ test('buildRecallQueue includes overdue treatment reviews', () => {
     '2025-08-01T00:00:00Z',
   );
 
+  // The patient also qualifies for a six-month routine recall, so look for the review specifically.
+  const review = queue.items.find((item) => item.kind === 'treatment-review');
+  assert.ok(review);
+  assert.equal(review.patient_name, 'Ben Jones');
+  assert.equal(review.due_date, '2025-01-31T00:00:00.000Z');
+  assert.equal(queue.summary.treatment, 1);
+});
+
+test('buildRecallQueue reports the real due date and treats any past attended appointment as the last visit', () => {
+  const queue = buildRecallQueue(
+    [{ id: 'p3', first_name: 'Cara', last_name: 'Ngwenya', created_at: '2024-01-01T00:00:00Z' }],
+    [{ id: 'a2', patient_id: 'p3', appointment_date: '2025-01-10T09:00:00Z', status: 'Scheduled' }],
+    [],
+    [],
+    [],
+    '2025-08-01T00:00:00Z',
+  );
+
   assert.equal(queue.items.length, 1);
-  assert.equal(queue.items[0].kind, 'treatment-review');
-  assert.equal(queue.items[0].patient_name, 'Ben Jones');
+  assert.equal(queue.items[0].source_label, 'Last appointment');
+  assert.equal(queue.items[0].last_activity_date, '2025-01-10T09:00:00.000Z');
+  assert.equal(queue.items[0].due_date, '2025-07-09T09:00:00.000Z');
+  assert.equal(queue.items[0].days_overdue, 22);
+});
+
+test('buildRecallQueue skips patients who already have an upcoming appointment', () => {
+  const queue = buildRecallQueue(
+    [{ id: 'p4', first_name: 'Dan', last_name: 'Pillay', created_at: '2024-01-01T00:00:00Z' }],
+    [
+      { id: 'a3', patient_id: 'p4', appointment_date: '2025-08-20T09:00:00Z', status: 'Scheduled' },
+      { id: 'a4', patient_id: 'p4', appointment_date: '2025-08-25T09:00:00Z', status: 'Cancelled' },
+    ],
+    [],
+    [],
+    [],
+    '2025-08-01T00:00:00Z',
+  );
+
+  assert.equal(queue.items.length, 0);
+  assert.equal(queue.summary.booked, 1);
+});
+
+test('buildRecallQueue ignores cancelled appointments when finding the last visit', () => {
+  const queue = buildRecallQueue(
+    [{ id: 'p5', first_name: 'Eve', last_name: 'Naidoo', created_at: '2024-01-01T00:00:00Z' }],
+    [{ id: 'a5', patient_id: 'p5', appointment_date: '2025-07-01T09:00:00Z', status: 'Cancelled' }],
+    [],
+    [],
+    [],
+    '2025-08-01T00:00:00Z',
+  );
+
+  assert.equal(queue.items.length, 1);
+  assert.equal(queue.items[0].source_label, 'Patient record');
 });

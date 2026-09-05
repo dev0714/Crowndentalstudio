@@ -22,6 +22,10 @@ CREATE TEMP TABLE demo_lab_cases ON COMMIT DROP AS
 CREATE TEMP TABLE demo_appointments ON COMMIT DROP AS
   SELECT id FROM public.appointments WHERE patient_id IN (SELECT id FROM demo_patients);
 
+-- Bank statement lines may be matched to a demo invoice; unlink them rather than delete them.
+UPDATE public.bank_statement_lines SET matched_invoice_id = NULL
+  WHERE matched_invoice_id IN (SELECT id FROM demo_invoices);
+
 -- Rows that hang off invoices, lab cases and appointments
 DELETE FROM public.medical_aid_authorizations
   WHERE patient_id IN (SELECT id FROM demo_patients) OR invoice_id IN (SELECT id FROM demo_invoices);
@@ -52,9 +56,12 @@ DELETE FROM public.invoices WHERE id IN (SELECT id FROM demo_invoices);
 DELETE FROM public.lab_cases WHERE id IN (SELECT id FROM demo_lab_cases);
 DELETE FROM public.appointments WHERE id IN (SELECT id FROM demo_appointments);
 
--- The demo patients and leads themselves
-DELETE FROM public.patients WHERE id IN (SELECT id FROM demo_patients);
+-- The demo leads first (a demo lead was converted into a demo patient), then any other lead
+-- that points at a demo patient is unlinked, then the demo patients themselves.
 DELETE FROM public.leads WHERE email ILIKE '%@example.com';
+UPDATE public.leads SET converted_patient_id = NULL
+  WHERE converted_patient_id IN (SELECT id FROM demo_patients);
+DELETE FROM public.patients WHERE id IN (SELECT id FROM demo_patients);
 
 -- What is left
 SELECT 'patients' AS table_name, COUNT(*) AS remaining FROM public.patients

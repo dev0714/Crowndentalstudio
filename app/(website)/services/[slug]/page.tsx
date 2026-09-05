@@ -1,8 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { CheckCircle, ArrowRight, Phone, Mail } from 'lucide-react'
+import { Check, Phone, Mail } from 'lucide-react'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { FloatingBlob, FloatingBlobAlt } from '@/components/motion'
+import { FadeInUp, StaggerContainer, StaggerItem } from '@/components/motion'
+import { Arrow, CtaBand, Eyebrow, PageHero, btn, CONTACT_EMAIL, PHONE_DISPLAY, PHONE_HREF } from '@/components/website/primitives'
 
 const serviceDetails = {
   'cosmetic-aesthetic-dentistry': {
@@ -383,181 +384,110 @@ export default async function ServiceDetail({ params }: { params: Promise<{ slug
   const service = serviceDetails[slug as keyof typeof serviceDetails] || serviceDetails['cosmetic-aesthetic-dentistry']
 
   return (
-    <main>
-      {/* Hero */}
-      <section className="relative min-h-[52vh] flex items-end pb-14 overflow-hidden pt-20">
-        {/* Background image */}
-        <div className="absolute inset-0">
-          <Image
-            src={service.image}
-            alt={service.title}
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(29,78,216,0.93) 0%, rgba(8,145,178,0.88) 100%)' }} />
+    <main className="overflow-x-clip bg-cream">
+      <PageHero
+        eyebrow="Treatment"
+        lines={[service.title]}
+        intro={service.description}
+        image={service.image}
+        imageAlt={service.title}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          <Link href="/contact" className={btn.light}>Book an appointment</Link>
+          <a href={PHONE_HREF} className={btn.ghostOnDark}><Phone className="w-[18px] h-[18px]" /> Call {PHONE_DISPLAY}</a>
         </div>
+      </PageHero>
 
-        {/* Floating blobs */}
-        <FloatingBlob className="absolute top-12 right-16 w-80 h-80 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
-        <FloatingBlobAlt className="absolute bottom-0 left-12 w-64 h-64 bg-blue-300/15 rounded-full blur-3xl pointer-events-none" />
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-28">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+          <div className="lg:col-span-8 space-y-16 lg:space-y-20">
+            <FadeInUp>
+              <Eyebrow>Overview</Eyebrow>
+              <div className="rule-draw w-14 h-px bg-teal mt-4 mb-6" aria-hidden="true" />
+              <h2 className="font-display font-medium text-ink text-[32px] sm:text-4xl lg:text-[44px] leading-[1.08] mb-5">What is {service.title.toLowerCase()}?</h2>
+              <p className="text-base sm:text-lg leading-relaxed text-muted-ink">{service.overview}</p>
+            </FadeInUp>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          {/* Title */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
-            {service.title}
-          </h1>
-          <p className="text-lg md:text-xl text-white/80 mt-4 max-w-2xl drop-shadow">
-            {service.description}
-          </p>
-
-          {/* CTA pills */}
-          <div className="flex flex-wrap gap-3 mt-8">
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 bg-white text-blue-700 px-6 py-2.5 rounded-full font-bold text-sm hover:bg-blue-50 hover:shadow-lg hover:scale-105 transition-all shadow-md"
-            >
-              Book Appointment <ArrowRight className="w-4 h-4" />
-            </Link>
-            <a
-              href="tel:0812078621"
-              className="inline-flex items-center gap-2 glass border border-white/30 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-white/20 transition-all"
-            >
-              <Phone className="w-4 h-4" /> 081 207 8621
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Content */}
-      <section className="bg-gradient-to-b from-slate-50 to-white py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2 space-y-14">
-              {/* Featured Image */}
-              <div className="relative h-80 md:h-[420px] rounded-3xl overflow-hidden shadow-2xl">
-                <Image
-                  src={service.image}
-                  alt={service.title}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/30 to-transparent" />
-              </div>
-
-              {/* What is it */}
-              <div>
-                <p className="text-cyan-600 text-sm font-bold uppercase tracking-widest mb-2">Overview</p>
-                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-5">What is {service.title}?</h2>
-                <p className="text-lg text-gray-600 leading-relaxed">{service.overview}</p>
-              </div>
-
-              {/* What to Expect */}
-              <div>
-                <p className="text-cyan-600 text-sm font-bold uppercase tracking-widest mb-2">Process</p>
-                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-7">What to Expect</h2>
-                <div className="space-y-4">
-                  {service.whatToExpect.map((step, idx) => (
-                    <div key={idx} className="flex gap-5 p-4 bg-white rounded-2xl border border-blue-50 shadow-sm hover:shadow-md hover:border-blue-100 transition-all">
-                      <div className="flex-shrink-0 w-9 h-9 bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md">
-                        {idx + 1}
-                      </div>
-                      <p className="text-gray-700 mt-1.5 leading-relaxed">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Benefits */}
-              <div>
-                <p className="text-cyan-600 text-sm font-bold uppercase tracking-widest mb-2">Why Choose Us</p>
-                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-7">Benefits</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {service.benefits.map((benefit, idx) => (
-                    <div key={idx} className="flex gap-3 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 hover:shadow-md transition-all">
-                      <CheckCircle className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-gray-700 text-sm font-medium leading-relaxed">{benefit}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* FAQ */}
-              <div>
-                <p className="text-cyan-600 text-sm font-bold uppercase tracking-widest mb-2">Questions</p>
-                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-7">Frequently Asked Questions</h2>
-                <Accordion type="single" collapsible className="space-y-3">
-                  {service.faq.map((item, idx) => (
-                    <AccordionItem key={idx} value={`item-${idx}`} className="border border-blue-100 rounded-2xl overflow-hidden bg-white shadow-sm">
-                      <AccordionTrigger className="text-base font-semibold hover:text-cyan-600 px-5 py-4 hover:no-underline">
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-gray-600 px-5 pb-4 leading-relaxed">
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
+            <div>
+              <FadeInUp>
+                <Eyebrow>What to expect</Eyebrow>
+                <h2 className="font-display font-medium text-ink text-[32px] sm:text-4xl lg:text-[44px] leading-[1.08] mt-4 mb-6">Your visit, step by step.</h2>
+              </FadeInUp>
+              <StaggerContainer className="divide-y divide-hairline border-y border-hairline">
+                {service.whatToExpect.map((step, idx) => (
+                  <StaggerItem key={idx} className="grid grid-cols-[48px_1fr] sm:grid-cols-[64px_1fr] gap-4 sm:gap-6 py-5">
+                    <div className="font-display text-[24px] text-teal leading-none pt-0.5">{String(idx + 1).padStart(2, '0')}</div>
+                    <p className="text-[15px] sm:text-base leading-relaxed text-ink">{step}</p>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
             </div>
 
-            {/* Sidebar */}
             <div>
-              <div className="sticky top-24 space-y-5">
-                {/* CTA card */}
-                <div className="relative overflow-hidden rounded-3xl p-8 space-y-5" style={{ background: 'linear-gradient(135deg, rgba(29,78,216,1) 0%, rgba(8,145,178,1) 100%)' }}>
-                  <FloatingBlob className="absolute -top-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-                  <h3 className="text-2xl font-bold text-white relative z-10">Ready to Get Started?</h3>
-                  <p className="text-white/70 text-sm relative z-10">Book your appointment today and take the first step toward your best smile.</p>
-                  <Link href="/contact" className="relative z-10 block w-full bg-white text-blue-700 py-3 rounded-2xl font-bold hover:bg-blue-50 hover:shadow-xl hover:scale-105 transition-all text-center shadow-lg">
-                    Book This Service
-                  </Link>
-                  <div className="relative z-10 border-t border-white/20 pt-5 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                        <Phone className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-white/60 font-semibold uppercase tracking-wide">Call us directly</p>
-                        <a href="tel:0812078621" className="text-base font-bold text-white hover:text-cyan-200 transition-colors">081 207 8621</a>
-                      </div>
+              <FadeInUp>
+                <Eyebrow>Benefits</Eyebrow>
+                <h2 className="font-display font-medium text-ink text-[32px] sm:text-4xl lg:text-[44px] leading-[1.08] mt-4 mb-6">Why patients choose it.</h2>
+              </FadeInUp>
+              <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+                {service.benefits.map((benefit, idx) => (
+                  <StaggerItem key={idx} className="flex gap-3 py-3 border-b border-hairline">
+                    <Check className="w-5 h-5 text-teal flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <p className="text-[15px] leading-relaxed text-ink">{benefit}</p>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+            </div>
+
+            <FadeInUp>
+              <Eyebrow>Questions</Eyebrow>
+              <h2 className="font-display font-medium text-ink text-[32px] sm:text-4xl lg:text-[44px] leading-[1.08] mt-4 mb-6">Frequently asked.</h2>
+              <Accordion type="single" collapsible className="border-t border-hairline">
+                {service.faq.map((item, idx) => (
+                  <AccordionItem key={idx} value={`item-${idx}`} className="border-b border-hairline">
+                    <AccordionTrigger className="font-display font-medium text-ink text-[20px] sm:text-[22px] leading-snug text-left py-5 hover:no-underline hover:text-teal">
+                      {item.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-[15px] leading-relaxed text-muted-ink pb-5">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </FadeInUp>
+          </div>
+
+          <aside className="lg:col-span-4">
+            <div className="lg:sticky lg:top-28 space-y-5">
+              <FadeInUp>
+                <div className="bg-ink text-white p-7 sm:p-8">
+                  <h3 className="font-display font-medium text-[28px] leading-tight mb-2">Ready to get started?</h3>
+                  <p className="text-sm leading-relaxed text-white/75 mb-6">Book your appointment and take the first step toward a healthier smile.</p>
+                  <Link href="/contact" className={`${btn.light} w-full`}>Book this treatment</Link>
+                  <div className="mt-6 pt-6 border-t border-white/20 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Phone className="w-4 h-4 mt-1 text-teal-light flex-shrink-0" />
+                      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Call us</p><a href={PHONE_HREF} className="text-base font-semibold text-white hover:text-teal-light">{PHONE_DISPLAY}</a></div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                        <Mail className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-white/60 font-semibold uppercase tracking-wide">Email us</p>
-                        <a href="mailto:info@crowndental.com" className="text-sm font-bold text-white hover:text-cyan-200 transition-colors break-all">info@crowndental.com</a>
-                      </div>
+                    <div className="flex items-start gap-3">
+                      <Mail className="w-4 h-4 mt-1 text-teal-light flex-shrink-0" />
+                      <div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/60">Email</p><a href={`mailto:${CONTACT_EMAIL}`} className="text-sm font-semibold text-white hover:text-teal-light break-all">{CONTACT_EMAIL}</a></div>
                     </div>
                   </div>
                 </div>
-
-                {/* All services link */}
-                <div className="bg-white rounded-3xl p-6 border border-blue-100 shadow-sm space-y-4">
-                  <h4 className="font-bold text-blue-900">Explore All Services</h4>
-                  <p className="text-sm text-gray-500">We offer a comprehensive range of dental treatments for the whole family.</p>
-                  <Link href="/services" className="inline-flex items-center gap-2 text-blue-600 font-bold text-sm hover:text-cyan-600 transition-colors">
-                    View All Services <ArrowRight className="w-4 h-4" />
-                  </Link>
+              </FadeInUp>
+              <FadeInUp delay={0.1}>
+                <div className="bg-white border border-hairline p-7">
+                  <h4 className="font-display font-medium text-ink text-[22px] leading-tight mb-2">All 14 treatments</h4>
+                  <p className="text-sm leading-relaxed text-muted-ink mb-4">A comprehensive range of dental care for the whole family.</p>
+                  <Link href="/services" className="group inline-flex items-center gap-2 text-sm font-semibold text-ink hover:text-teal">Browse treatments <Arrow className="w-4 h-4" /></Link>
                 </div>
-              </div>
+              </FadeInUp>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
 
-      {/* CTA Banner */}
-      <section className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-4 drop-shadow-lg">Schedule Your Consultation Today</h2>
-          <p className="text-lg opacity-95 mb-8 drop-shadow">Discover how we can help you achieve your dental goals with expert care.</p>
-          <Link href="/contact" className="inline-block bg-white text-blue-600 px-8 py-4 rounded-xl font-bold hover:bg-blue-50 shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-            Book Appointment Now
-          </Link>
-        </div>
-      </section>
+      <CtaBand title="Schedule a consultation." copy="Discover how we can help you reach your goals, with care that is explained before it is given." />
     </main>
   )
 }

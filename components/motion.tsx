@@ -107,20 +107,6 @@ export function StaggerItem({ children, className, delay = 0, style }: AnimatedP
   )
 }
 
-/** Mount-time entrance used by hero copy. */
-export function HeroText({ children, className, delay = 0 }: AnimatedProps) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), delay * 1000 + 50)
-    return () => clearTimeout(t)
-  }, [delay])
-  return (
-    <div className={className} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(40px)', transition: `opacity 0.9s ${EASE}, transform 0.9s ${EASE}` }}>
-      {children}
-    </div>
-  )
-}
-
 /**
  * Cinematic headline: each line rises from behind an invisible mask, 130ms apart.
  * Pure CSS (`.reveal-mask` / `.reveal-line` in globals.css), so it plays before hydration.
@@ -164,17 +150,4 @@ export function FadeUp({ children, className, delay = 0 }: { children: ReactNode
       {children}
     </div>
   )
-}
-
-// Retained for the About/Services/Contact/Blog pages until they are restyled.
-export function FloatingBlob({ className }: { className?: string }) {
-  return <div className={className} />
-}
-
-export function FloatingBlobAlt({ className }: { className?: string }) {
-  return <div className={className} />
-}
-
-export function FloatCard({ children, className }: { children: ReactNode; className?: string; animDelay?: number }) {
-  return <div className={className}>{children}</div>
 }

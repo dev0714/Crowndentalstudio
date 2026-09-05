@@ -97,10 +97,10 @@ function StockContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Items', value: health.totalItems, note: 'In inventory', gradient: 'from-blue-600 to-cyan-500' },
+            { label: 'Total Items', value: health.totalItems, note: 'In inventory', gradient: 'from-navy-800 to-ink' },
             { label: 'Low Stock', value: health.lowStockCount, note: 'Needs reorder', gradient: 'from-rose-600 to-pink-500' },
-            { label: 'Expiry 30 Days', value: health.expiringWithin30Count, note: 'Use or transfer first', gradient: 'from-amber-500 to-orange-500' },
-            { label: 'Inventory Value', value: formatZAR(health.inventoryValue), note: 'Total cost', gradient: 'from-emerald-600 to-teal-500' },
+            { label: 'Expiry 30 Days', value: health.expiringWithin30Count, note: 'Use or transfer first', gradient: 'from-[#b8742e] to-[#8f5a22]' },
+            { label: 'Inventory Value', value: formatZAR(health.inventoryValue), note: 'Total cost', gradient: 'from-teal to-[#0b6f71]' },
           ].map((card) => (
             <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
               <p className="text-2xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -228,7 +228,7 @@ function StockContent() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
-          <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md">Add Stock Item</Button>
+          <Button className="bg-navy-800 hover:bg-ink border-0 shadow-md">Add Stock Item</Button>
         </div>
 
         <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
@@ -258,7 +258,7 @@ function StockContent() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-slate-600">{item.recommended_action}</span>
-                      <Button size="sm" className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-sm">
+                      <Button size="sm" className="bg-navy-800 hover:bg-ink border-0 shadow-sm">
                         Order Now
                       </Button>
                     </div>
@@ -305,7 +305,7 @@ function StockContent() {
                       filteredItems.map((item) => {
                         const status = getStockStatus(item);
                         return (
-                          <tr key={item.id} className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors">
+                          <tr key={item.id} className="border-b border-slate-100 hover:bg-cream/40 transition-colors">
                             <td className="py-3 px-4 font-medium text-slate-900">{item.item_code}</td>
                             <td className="py-3 px-4 text-slate-700">{item.item_name}</td>
                             <td className="py-3 px-4 text-slate-600">{item.category}</td>

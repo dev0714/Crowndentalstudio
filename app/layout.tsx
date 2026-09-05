@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
-import { Geist, Cormorant_Garamond, Manrope } from 'next/font/google'
+import { Cormorant_Garamond, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AppShell } from '@/components/app-shell'
 import './globals.css'
 
-const geistSans = Geist({ subsets: ['latin'] })
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
@@ -31,7 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${cormorant.variable} ${manrope.variable}`}>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className="font-body antialiased">
         <AppShell>{children}</AppShell>
         <Analytics />
       </body>

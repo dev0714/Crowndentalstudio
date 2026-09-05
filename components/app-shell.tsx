@@ -63,7 +63,7 @@ function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
     name ? name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() : 'U';
 
   return (
-    <header className="flex-shrink-0 h-14 flex items-center gap-3 px-5 bg-white border-b border-slate-200 shadow-sm z-30">
+    <header className="flex-shrink-0 h-14 flex items-center gap-3 px-5 bg-white border-b border-hairline z-30">
 
       {/* Patient search */}
       <div ref={searchRef} className="relative flex-1 max-w-md">
@@ -74,10 +74,10 @@ function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setShowDrop(true)}
-          className="w-full pl-9 pr-9 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-400 focus:bg-white transition-all"
+          className="w-full pl-9 pr-9 py-2 rounded-full border border-hairline bg-cream text-sm text-ink placeholder-muted-ink/70 focus:outline-none focus:ring-2 focus:ring-teal/20 focus:border-teal focus:bg-white transition-all"
         />
         {searching && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-teal border-t-transparent rounded-full animate-spin" />
         )}
 
         {/* Dropdown */}
@@ -96,20 +96,20 @@ function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
                   setQuery('');
                   setShowDrop(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50 transition-colors text-left group"
+                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-cream transition-colors text-left group"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-semibold">
                   {patient.first_name?.[0]}{patient.last_name?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 truncate">
+                  <p className="text-sm font-semibold text-slate-900 group-hover:text-teal truncate">
                     {patient.first_name} {patient.last_name}
                   </p>
                   {patient.email && (
                     <p className="text-xs text-slate-500 truncate">{patient.email}</p>
                   )}
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-400 flex-shrink-0" />
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-teal flex-shrink-0" />
               </button>
             ))}
             <div className="px-4 py-2 border-t border-slate-100 bg-slate-50">
@@ -118,7 +118,7 @@ function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
                   router.push(`/patients?search=${encodeURIComponent(query)}`);
                   setShowDrop(false);
                 }}
-                className="text-[12px] text-blue-600 font-semibold hover:text-blue-700 transition-colors"
+                className="text-[12px] text-teal font-semibold hover:text-ink transition-colors"
               >
                 View all results →
               </button>
@@ -129,14 +129,14 @@ function TopBar({ currentUser }: { currentUser: PublicAuthUser | null }) {
 
       {/* Right */}
       <div className="flex items-center gap-2 ml-auto">
-        <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
+        <button className="relative p-2 text-muted-ink hover:text-ink hover:bg-cream rounded-full transition-colors">
           <Bell className="w-[1.1rem] h-[1.1rem]" />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
         </button>
 
         {currentUser && (
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200 ml-1">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[11px] shadow-sm">
+          <div className="flex items-center gap-2 pl-2 border-l border-hairline ml-1">
+            <div className="w-7 h-7 rounded-full bg-navy-800 flex items-center justify-center text-white font-semibold text-[11px]">
               {initials(currentUser.full_name)}
             </div>
             <div className="hidden sm:block leading-none">
@@ -189,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <PortalSessionProvider currentUser={currentUser}>
-      <div className="flex h-screen bg-[#f1f5f9] overflow-hidden">
+      <div className="portal flex h-screen bg-cream text-ink overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <TopBar currentUser={currentUser} />

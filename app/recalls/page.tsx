@@ -105,7 +105,7 @@ function RecallsContent() {
             <h1 className="text-2xl font-bold text-slate-900">Recalls & Treatment Reviews</h1>
             <p className="text-slate-500 text-sm mt-0.5">Track routine recalls, treatment reviews, and procedure follow-ups</p>
           </div>
-          <Button asChild className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md text-xs">
+          <Button asChild className="bg-navy-800 hover:bg-ink border-0 shadow-md text-xs">
             <Link href="/patients">Open Patients</Link>
           </Button>
         </div>
@@ -118,10 +118,10 @@ function RecallsContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {[
-            { label: 'Total Queue', value: queue?.summary.total ?? 0, gradient: 'from-blue-600 to-cyan-500' },
-            { label: 'Routine Recalls', value: queue?.summary.routine ?? 0, gradient: 'from-violet-600 to-purple-500' },
-            { label: 'Treatment Reviews', value: queue?.summary.treatment ?? 0, gradient: 'from-emerald-600 to-teal-500' },
-            { label: 'Procedure Reviews', value: queue?.summary.procedures ?? 0, gradient: 'from-amber-500 to-orange-500' },
+            { label: 'Total Queue', value: queue?.summary.total ?? 0, gradient: 'from-navy-800 to-ink' },
+            { label: 'Routine Recalls', value: queue?.summary.routine ?? 0, gradient: 'from-[#3f4c7a] to-[#2c365c]' },
+            { label: 'Treatment Reviews', value: queue?.summary.treatment ?? 0, gradient: 'from-teal to-[#0b6f71]' },
+            { label: 'Procedure Reviews', value: queue?.summary.procedures ?? 0, gradient: 'from-[#b8742e] to-[#8f5a22]' },
             { label: 'Lab Follow-ups', value: queue?.summary.lab ?? 0, gradient: 'from-cyan-600 to-blue-500' },
             { label: 'Overdue', value: queue?.summary.overdue ?? 0, gradient: 'from-rose-600 to-pink-500' },
           ].map((stat) => (
@@ -144,7 +144,7 @@ function RecallsContent() {
             ) : items.length > 0 ? (
               <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-blue-200 transition-colors">
+                  <div key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-teal/30 transition-colors">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex flex-wrap gap-2 items-center mb-2">
@@ -157,7 +157,7 @@ function RecallsContent() {
                                 ? 'bg-red-100 text-red-700'
                                 : item.priority === 'medium'
                                   ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-blue-100 text-blue-700'
+                                  : 'bg-blue-100 text-ink'
                             }`}
                           >
                             {item.priority} priority
@@ -179,7 +179,7 @@ function RecallsContent() {
                       <div className="flex flex-col items-end gap-2">
                         <Button
                           onClick={() => scheduleRecall(item)}
-                          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-sm text-xs"
+                          className="bg-navy-800 hover:bg-ink border-0 shadow-sm text-xs"
                           disabled={schedulingId === item.id}
                         >
                           {schedulingId === item.id ? 'Scheduling...' : 'Schedule Follow-up'}

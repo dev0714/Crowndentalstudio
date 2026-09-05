@@ -70,7 +70,7 @@ function PatientsContent() {
           </div>
           <Button
             onClick={() => router.push('/patients/add')}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md border-0"
+            className="bg-navy-800 hover:bg-ink text-white shadow-md border-0"
           >
             + Add Patient
           </Button>
@@ -124,10 +124,10 @@ function PatientsContent() {
                   <tbody>
                     {filteredPatients.length > 0 ? (
                       filteredPatients.map((patient) => (
-                        <tr key={patient.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
+                        <tr key={patient.id} className="border-b border-slate-50 hover:bg-cream/40 transition-colors">
                           <td className="py-3 px-6">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold shadow-sm">
+                              <div className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center flex-shrink-0 text-white text-[11px] font-bold shadow-sm">
                                 {patient.first_name?.[0]}{patient.last_name?.[0]}
                               </div>
                               <span className="text-sm font-semibold text-slate-900">
@@ -154,7 +154,7 @@ function PatientsContent() {
                               onClick={() => router.push(`/patients/${patient.id}`)}
                               variant="outline"
                               size="sm"
-                              className="text-xs border-slate-200 hover:border-blue-300 hover:text-blue-600"
+                              className="text-xs border-slate-200 hover:border-blue-300 hover:text-teal"
                             >
                               View →
                             </Button>

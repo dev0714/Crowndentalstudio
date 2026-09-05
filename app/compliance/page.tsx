@@ -107,7 +107,7 @@ function CompliancePageContent() {
             <h1 className="text-2xl font-bold text-slate-900">Compliance Vault</h1>
             <p className="text-slate-500 text-sm mt-0.5">Review communication consent and signed compliance records</p>
           </div>
-          <Button asChild className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md text-xs">
+          <Button asChild className="bg-navy-800 hover:bg-ink border-0 shadow-md text-xs">
             <Link href="/patients">Open Patients</Link>
           </Button>
         </div>
@@ -120,10 +120,10 @@ function CompliancePageContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Communication Consents', value: summary?.communication_consents ?? 0, gradient: 'from-blue-600 to-cyan-500' },
-            { label: 'Signed Consents', value: summary?.signed_consents ?? 0, gradient: 'from-violet-600 to-purple-500' },
-            { label: 'Vault Documents', value: summary?.documents ?? 0, gradient: 'from-emerald-600 to-teal-500' },
-            { label: 'Documents Attached', value: summary?.with_documents ?? 0, gradient: 'from-amber-500 to-orange-500' },
+            { label: 'Communication Consents', value: summary?.communication_consents ?? 0, gradient: 'from-navy-800 to-ink' },
+            { label: 'Signed Consents', value: summary?.signed_consents ?? 0, gradient: 'from-[#3f4c7a] to-[#2c365c]' },
+            { label: 'Vault Documents', value: summary?.documents ?? 0, gradient: 'from-teal to-[#0b6f71]' },
+            { label: 'Documents Attached', value: summary?.with_documents ?? 0, gradient: 'from-[#b8742e] to-[#8f5a22]' },
           ].map((card) => (
             <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
               <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>

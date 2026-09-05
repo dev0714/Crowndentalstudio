@@ -336,7 +336,7 @@ function SettingsPageContent() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button onClick={handleSave} disabled={saving} className="bg-navy-800 hover:bg-ink text-white">
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? 'Saving…' : 'Save Key'}
                 </Button>
@@ -574,7 +574,7 @@ function SettingsPageContent() {
 
           <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <CardContent className="p-6 flex items-start gap-3">
-              <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
+              <Shield className="w-5 h-5 text-teal mt-0.5" />
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-slate-900">Security note</p>
                 <p className="text-sm text-slate-600">

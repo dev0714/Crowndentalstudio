@@ -38,13 +38,13 @@ type EmailsPayload = {
 };
 
 const GROUP_ACCENT: Record<string, string> = {
-  lab: 'from-violet-600 to-purple-500',
-  appointments: 'from-blue-600 to-cyan-500',
-  accounts: 'from-emerald-600 to-teal-500',
-  suppliers: 'from-amber-500 to-orange-500',
-  patient_enquiries: 'from-sky-600 to-blue-500',
-  marketing: 'from-slate-500 to-slate-700',
-  other: 'from-slate-400 to-slate-600',
+  lab: 'from-[#3f4c7a] to-[#2c365c]',
+  appointments: 'from-navy-800 to-ink',
+  accounts: 'from-teal to-[#0b6f71]',
+  suppliers: 'from-[#b8742e] to-[#8f5a22]',
+  patient_enquiries: 'from-[#2f5f86] to-[#1f4562]',
+  marketing: 'from-[#5b6b7f] to-[#3b4653]',
+  other: 'from-[#8a94a3] to-[#4b5563]',
 };
 
 function EmailsContent() {
@@ -89,7 +89,7 @@ function EmailsContent() {
       <div className="max-w-6xl mx-auto flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Mail className="w-6 h-6 text-blue-600" /> Emails
+            <Mail className="w-6 h-6 text-teal" /> Emails
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
             Inbound email from the last 48 hours, grouped and summarised with AI
@@ -128,9 +128,9 @@ function EmailsContent() {
           {/* AI digest */}
           <div className="max-w-6xl mx-auto">
             <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-              <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-blue-50 to-cyan-50 py-4 px-6">
+              <CardHeader className="border-b border-slate-100 bg-cream py-4 px-6">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-600" /> AI summary
+                  <Sparkles className="w-4 h-4 text-teal" /> AI summary
                 </CardTitle>
                 <CardDescription className="text-xs">
                   {data.total} emails since {formatDateTimeSA(data.since)}
@@ -144,7 +144,7 @@ function EmailsContent() {
                       <ul className="space-y-1.5">
                         {data.digest.highlights.map((item, index) => (
                           <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-teal flex-shrink-0" />
                             <span>{item}</span>
                           </li>
                         ))}

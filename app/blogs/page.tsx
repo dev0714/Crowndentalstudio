@@ -248,7 +248,7 @@ function BlogsContent() {
             </Button>
             <Button
               onClick={handleNewPost}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md"
+              className="bg-navy-800 hover:bg-ink border-0 shadow-md"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Post
@@ -352,7 +352,7 @@ function BlogsContent() {
           <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center shadow-sm">
+                <div className="w-8 h-8 rounded-xl bg-navy-800 flex items-center justify-center shadow-sm">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div>
@@ -453,7 +453,7 @@ function BlogsContent() {
                           setImageFileName(null);
                           setCoverImageUrl('');
                         }}
-                        className="font-semibold text-blue-600 hover:text-blue-700"
+                        className="font-semibold text-teal hover:text-ink"
                       >
                         Remove
                       </button>
@@ -477,7 +477,7 @@ function BlogsContent() {
                   type="checkbox"
                   checked={form.is_published}
                   onChange={(e) => handleFieldChange('is_published', e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-slate-300 text-teal focus:ring-teal"
                 />
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Published on website</p>
@@ -491,7 +491,7 @@ function BlogsContent() {
                 <Button
                   onClick={handleSave}
                   disabled={saving || uploadingImage}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-0 shadow-md"
+                  className="bg-navy-800 hover:bg-ink border-0 shadow-md"
                 >
                   {saving ? 'Saving...' : selectedPost ? 'Save Changes' : 'Create Post'}
                 </Button>

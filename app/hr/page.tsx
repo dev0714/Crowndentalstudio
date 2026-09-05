@@ -64,10 +64,10 @@ function HRPageContent() {
 
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { label: 'Total Staff', value: summary.totalStaff, gradient: 'from-blue-600 to-cyan-500' },
-            { label: 'Ready', value: summary.readyStaffCount, gradient: 'from-emerald-600 to-teal-500' },
-            { label: 'Needs Attention', value: summary.needsAttentionCount, gradient: 'from-amber-500 to-orange-500' },
-            { label: 'Inactive', value: summary.inactiveStaffCount, gradient: 'from-slate-600 to-slate-800' },
+            { label: 'Total Staff', value: summary.totalStaff, gradient: 'from-navy-800 to-ink' },
+            { label: 'Ready', value: summary.readyStaffCount, gradient: 'from-teal to-[#0b6f71]' },
+            { label: 'Needs Attention', value: summary.needsAttentionCount, gradient: 'from-[#b8742e] to-[#8f5a22]' },
+            { label: 'Inactive', value: summary.inactiveStaffCount, gradient: 'from-[#4b5563] to-[#1f2937]' },
           ].map((card) => (
             <div key={card.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-5 text-white shadow-md`}>
               <p className="text-3xl font-bold leading-none mb-1">{loading ? '-' : card.value}</p>
@@ -115,7 +115,7 @@ function HRPageContent() {
                     {filteredStaff.map((row) => {
                       const profile = summary.profiles.find((item) => item.id === row.id);
                       return (
-                        <tr key={row.id} className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors">
+                        <tr key={row.id} className="border-b border-slate-100 hover:bg-cream/40 transition-colors">
                           <td className="px-4 py-3 font-medium text-slate-900">{row.full_name}</td>
                           <td className="px-4 py-3 text-slate-700">{row.role}</td>
                           <td className="px-4 py-3 text-slate-600">{row.email}</td>

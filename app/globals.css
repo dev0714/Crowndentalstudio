@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
+  --color-primary: #12305a;
+  --color-primary-dark: #0b1f3a;
   --color-primary-foreground: #ffffff;
   --color-secondary: #06b6d4;
   --color-secondary-foreground: #ffffff;
-  --color-accent: #3b82f6;
+  --color-accent: #0f8b8d;
   --color-accent-foreground: #ffffff;
   --color-background: #ffffff;
   --color-foreground: #0f172a;
@@ -14,7 +14,7 @@
   --color-muted-foreground: #64748b;
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
-  --color-ring: #2563eb;
+  --color-ring: #0f8b8d;
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
   --color-popover: #ffffff;
@@ -84,7 +84,7 @@
   }
 
   a {
-    @apply text-blue-600 hover:text-blue-700 transition-colors;
+    @apply text-teal hover:text-ink transition-colors;
   }
 
   button {
@@ -94,11 +94,11 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors;
+    @apply bg-navy-800 text-white px-6 py-2 rounded-md font-semibold hover:bg-ink transition-colors;
   }
 
   .btn-secondary {
-    @apply bg-cyan-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-cyan-600 transition-colors;
+    @apply bg-teal text-white px-6 py-2 rounded-md font-semibold hover:bg-ink transition-colors;
   }
 
   .card {
@@ -106,7 +106,7 @@
   }
 
   .input {
-    @apply w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600;
+    @apply w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal;
   }
 
   .badge {
@@ -114,7 +114,7 @@
   }
 
   .badge-primary {
-    @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700;
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-teal-soft text-ink;
   }
 
   .badge-success {
@@ -124,6 +124,13 @@
   .badge-error {
     @apply inline-block px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700;
   }
+}
+
+/* CRM portal: page titles share the website's serif voice. */
+.portal h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 /* ------------------------------------------------------------------

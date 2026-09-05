@@ -53,7 +53,7 @@ function LeadsContent() {
   const statusColor = (status: string) => {
     switch (status) {
       case LEAD_STATUS.NEW:
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-ink';
       case LEAD_STATUS.CONTACTED:
         return 'bg-amber-100 text-amber-700';
       case LEAD_STATUS.QUALIFIED:
@@ -71,7 +71,7 @@ function LeadsContent() {
     const colors: { [key: string]: string } = {
       Google: 'bg-red-50 text-red-700',
       Referral: 'bg-green-50 text-green-700',
-      Facebook: 'bg-blue-50 text-blue-700',
+      Facebook: 'bg-teal-soft text-ink',
       'Direct Call': 'bg-purple-50 text-purple-700',
     };
     return colors[source] || 'bg-slate-50 text-slate-700';
@@ -99,7 +99,7 @@ function LeadsContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat, i) => {
-            const gradients = ['from-blue-600 to-cyan-500','from-violet-600 to-purple-500','from-emerald-600 to-teal-500','from-amber-500 to-orange-500'];
+            const gradients = ['from-navy-800 to-ink','from-[#3f4c7a] to-[#2c365c]','from-teal to-[#0b6f71]','from-[#b8742e] to-[#8f5a22]'];
             return (
               <div key={stat.label} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[i]} p-5 text-white shadow-md`}>
                 <p className="text-3xl font-bold leading-none mb-1">{stat.value}</p>
@@ -123,7 +123,7 @@ function LeadsContent() {
                 <CardTitle className="text-base">Lead Pipeline</CardTitle>
                 <CardDescription className="text-xs">{loading ? 'Loading...' : `${leads.length} leads`}</CardDescription>
               </div>
-              <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md border-0 text-xs">
+              <Button className="bg-navy-800 hover:bg-ink text-white shadow-md border-0 text-xs">
                 + Add Lead
               </Button>
             </div>

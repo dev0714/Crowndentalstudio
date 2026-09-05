@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, KeyRound, Save, Bell, Mail } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type OpenAiKeyStatus = {
   configured: boolean;
@@ -35,6 +36,7 @@ function SettingsPageContent() {
   const [openAiKey, setOpenAiKey] = useState('');
   const [status, setStatus] = useState<OpenAiKeyStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'ai' | 'notifications' | 'inbox'>('ai');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -290,6 +292,14 @@ function SettingsPageContent() {
             <p className="text-slate-500 text-sm mt-0.5">Manage secure system configuration</p>
           </div>
 
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
+            <TabsList className="h-auto flex-wrap justify-start bg-white border border-slate-200 rounded-full p-1 gap-0.5 mb-3">
+              <TabsTrigger value="ai" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">AI &amp; transcription</TabsTrigger>
+              <TabsTrigger value="notifications" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">Patient notifications</TabsTrigger>
+              <TabsTrigger value="inbox" className="rounded-full px-4 py-1.5 text-xs font-semibold text-slate-500 data-[state=active]:bg-ink data-[state=active]:text-white data-[state=active]:shadow-none">Incoming email</TabsTrigger>
+            </TabsList>
+
+          <TabsContent value="ai" className="space-y-5">
           <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
               <div className="flex items-center gap-3">
@@ -355,6 +365,20 @@ function SettingsPageContent() {
             </CardContent>
           </Card>
 
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+            <CardContent className="p-4 sm:p-6 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-teal mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-slate-900">Security note</p>
+                <p className="text-sm text-slate-600">
+                  We store the key encrypted in the database and only decrypt it on the server when voice notes need transcription.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications">
           <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
               <div className="flex items-center gap-3">
@@ -480,7 +504,9 @@ function SettingsPageContent() {
               </div>
             </CardContent>
           </Card>
+          </TabsContent>
 
+          <TabsContent value="inbox">
           <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
               <div className="flex items-center gap-3">
@@ -571,18 +597,8 @@ function SettingsPageContent() {
               )}
             </CardContent>
           </Card>
-
-          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardContent className="p-4 sm:p-6 flex items-start gap-3">
-              <Shield className="w-5 h-5 text-teal mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-slate-900">Security note</p>
-                <p className="text-sm text-slate-600">
-                  We store the key encrypted in the database and only decrypt it on the server when voice notes need transcription.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          </TabsContent>
+          </Tabs>
         </div>
       </div>
     </DashboardLayout>

@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import type { FormEvent } from 'react';
 
 type LoginFormProps = {
@@ -14,10 +12,14 @@ type LoginFormProps = {
   onError?: (message: string) => void;
 };
 
+const labelClass = 'block text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-ink mb-2';
+const inputClass =
+  'w-full h-12 px-4 bg-white border border-hairline text-ink placeholder:text-muted-ink/60 focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal/20 transition-colors disabled:opacity-60';
+
 export function AuthLoginForm({
   redirectTo = '/dashboard',
-  submitLabel = 'Sign In',
-  loadingLabel = 'Signing in...',
+  submitLabel = 'Sign in',
+  loadingLabel = 'Signing in…',
   onSuccess,
   onError,
 }: LoginFormProps) {
@@ -60,52 +62,50 @@ export function AuthLoginForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-          Email
-        </label>
-        <Input
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <label htmlFor="email" className={labelClass}>Email</label>
+        <input
           id="email"
           type="email"
           placeholder="you@practice.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
-          className="border-slate-300 focus:border-slate-900 focus:ring-slate-900"
+          className={inputClass}
+          autoComplete="email"
           required
         />
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-          Password
-        </label>
-        <Input
+      <div>
+        <label htmlFor="password" className={labelClass}>Password</label>
+        <input
           id="password"
           type="password"
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
-          className="border-slate-300 focus:border-slate-900 focus:ring-slate-900"
+          className={inputClass}
+          autoComplete="current-password"
           required
         />
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+        <div role="alert" className="p-3 bg-red-50 border border-red-200 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      <Button
+      <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+        className="w-full inline-flex items-center justify-center h-12 rounded-full bg-navy-800 text-white font-semibold text-[15px] hover:bg-ink transition-colors disabled:opacity-60"
       >
         {isLoading ? loadingLabel : submitLabel}
-      </Button>
+      </button>
     </form>
   );
 }

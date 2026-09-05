@@ -72,5 +72,5 @@ UNION ALL SELECT 'invoices', COUNT(*) FROM public.invoices;
 
 COMMIT;
 
--- Optional: the seed script also added four demo stock items. Uncomment to remove them.
--- DELETE FROM public.stock_items WHERE item_code IN ('MAT-001', 'MAT-002', 'INS-001', 'SUP-001');
+-- The seed script also added four demo stock items, and a QA run left a test item. Remove them too.
+DELETE FROM public.stock_items WHERE item_code IN ('MAT-001', 'MAT-002', 'INS-001', 'SUP-001', 'QA-STOCK-001');

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { sendResendEmail } from '@/lib/notifications/resend';
-import { getResendFromEmail } from '@/lib/settings/notifications';
+import { getNotificationCopyRecipients, getResendFromEmail } from '@/lib/settings/notifications';
 import { bodyLinesToText, renderNotificationEmailHtml } from '@/lib/notifications/email-template';
 
 export const runtime = 'nodejs';
@@ -65,7 +65,15 @@ export async function POST(request: NextRequest) {
 
     // Tell the practice — best effort, never blocks the visitor.
     try {
-      const to = process.env.CONTACT_NOTIFY_EMAIL || (await getResendFromEmail());
+      const staffCopies = await getNotificationCopyRecipients().catch(() => []);
+      const recipients = Array.from(
+        new Set([process.env.CONTACT_NOTIFY_EMAIL, ...staffCopies].filter((entry): entry is string => Boolean(entry)).map((entry) => entry.trim().toLowerCase())),
+      );
+      if (recipients.length === 0) {
+        const fallback = await getResendFromEmail();
+        if (fallback) recipients.push(fallback);
+      }
+      const [to, ...bcc] = recipients;
       if (to) {
         const heading = `New website enquiry from ${name}`;
         const lines = [
@@ -74,7 +82,7 @@ export async function POST(request: NextRequest) {
           message,
           'This enquiry has been added to Leads in the CRM.',
         ];
-        await sendResendEmail({ to, subject: heading, html: renderNotificationEmailHtml(heading, lines), text: bodyLinesToText(lines) });
+        await sendResendEmail({ to, bcc, copyStaff: false, subject: heading, html: renderNotificationEmailHtml(heading, lines), text: bodyLinesToText(lines) });
       }
     } catch (notifyError) {
       console.error('Contact form notification failed:', notifyError);

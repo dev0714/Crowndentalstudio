@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       subject: heading,
       html: renderNotificationEmailHtml(heading, bodyLines),
       text: bodyLinesToText(bodyLines),
+      copyStaff: false,
     });
 
     await writeAuditEntry({

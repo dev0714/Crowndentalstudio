@@ -6,11 +6,13 @@ import {
   encryptSettingSecret,
   resolveSettingsEncryptionSecret,
 } from './secret-vault.ts';
+import { parseRecipientList } from '@/lib/notifications/recipients';
 
 export const RESEND_API_KEY_SETTING = 'resend_api_key';
 export const RESEND_FROM_EMAIL_SETTING = 'resend_from_email';
 export const LAB_NOTIFICATIONS_ENABLED_SETTING = 'lab_notifications_enabled';
 export const APPOINTMENT_NOTIFICATIONS_ENABLED_SETTING = 'appointment_notifications_enabled';
+export const NOTIFICATION_COPY_RECIPIENTS_SETTING = 'notification_copy_recipients';
 
 type SettingRow = {
   setting_key: string;
@@ -81,15 +83,22 @@ export async function areAppointmentNotificationsEnabled() {
   return row.setting_value === 'true';
 }
 
+/** Staff addresses that receive a copy of every notification the practice sends. */
+export async function getNotificationCopyRecipients(): Promise<string[]> {
+  const row = await readSetting(NOTIFICATION_COPY_RECIPIENTS_SETTING);
+  return parseRecipientList(row?.setting_value);
+}
+
 export async function getNotificationSettingsStatus() {
-  const [apiKeyRow, fromRow, labEnabledRow, apptEnabledRow] = await Promise.all([
+  const [apiKeyRow, fromRow, labEnabledRow, apptEnabledRow, copyRow] = await Promise.all([
     readSetting(RESEND_API_KEY_SETTING),
     readSetting(RESEND_FROM_EMAIL_SETTING),
     readSetting(LAB_NOTIFICATIONS_ENABLED_SETTING),
     readSetting(APPOINTMENT_NOTIFICATIONS_ENABLED_SETTING),
+    readSetting(NOTIFICATION_COPY_RECIPIENTS_SETTING),
   ]);
 
-  const updatedTimestamps = [apiKeyRow?.updated_at, fromRow?.updated_at, labEnabledRow?.updated_at, apptEnabledRow?.updated_at]
+  const updatedTimestamps = [apiKeyRow?.updated_at, fromRow?.updated_at, labEnabledRow?.updated_at, apptEnabledRow?.updated_at, copyRow?.updated_at]
     .filter((value): value is string => Boolean(value))
     .sort()
     .reverse();
@@ -99,6 +108,7 @@ export async function getNotificationSettingsStatus() {
     from_email: process.env.RESEND_FROM_EMAIL || fromRow?.setting_value || '',
     lab_notifications_enabled: labEnabledRow?.setting_value == null ? true : labEnabledRow.setting_value === 'true',
     appointment_notifications_enabled: apptEnabledRow?.setting_value == null ? true : apptEnabledRow.setting_value === 'true',
+    copy_recipients: parseRecipientList(copyRow?.setting_value),
     updated_at: updatedTimestamps[0] || null,
   };
 }
@@ -108,6 +118,7 @@ type SaveNotificationSettingsInput = {
   fromEmail?: string | null;
   labNotificationsEnabled?: boolean | null;
   appointmentNotificationsEnabled?: boolean | null;
+  copyRecipients?: string[] | null;
 };
 
 export async function saveNotificationSettings(input: SaveNotificationSettingsInput, updatedBy: string | null) {
@@ -161,6 +172,17 @@ export async function saveNotificationSettings(input: SaveNotificationSettingsIn
       setting_value: input.appointmentNotificationsEnabled ? 'true' : 'false',
       setting_type: 'text',
       description: 'Whether patients are emailed when an appointment is booked, changed or cancelled',
+      updated_by: updatedBy,
+      updated_at: nowIso,
+    });
+  }
+
+  if (Array.isArray(input.copyRecipients)) {
+    rows.push({
+      setting_key: NOTIFICATION_COPY_RECIPIENTS_SETTING,
+      setting_value: parseRecipientList(input.copyRecipients.join(',')).join(', '),
+      setting_type: 'text',
+      description: 'Staff addresses BCC’d on every patient notification and sent the website enquiry alerts',
       updated_by: updatedBy,
       updated_at: nowIso,
     });

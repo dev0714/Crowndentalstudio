@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getResendApiKey, getResendFromEmail } from '@/lib/settings/notifications';
+import { getNotificationCopyRecipients, getResendApiKey, getResendFromEmail } from '@/lib/settings/notifications';
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 
@@ -9,6 +9,10 @@ export type SendEmailInput = {
   subject: string;
   html: string;
   text: string;
+  /** Extra blind-copy recipients for this message. */
+  bcc?: string[];
+  /** BCC the practice's configured staff copy recipients. Defaults to true. */
+  copyStaff?: boolean;
 };
 
 export type SendEmailResult =
@@ -28,6 +32,11 @@ export async function sendResendEmail(input: SendEmailInput): Promise<SendEmailR
     return { ok: false, error: 'Recipient has no email address' };
   }
 
+  const toLower = input.to.trim().toLowerCase();
+  const staffCopies = input.copyStaff === false ? [] : await getNotificationCopyRecipients().catch(() => []);
+  const bcc = Array.from(new Set([...(input.bcc || []), ...staffCopies].map((entry) => entry.trim().toLowerCase())))
+    .filter((entry) => entry && entry !== toLower);
+
   try {
     const response = await fetch(RESEND_ENDPOINT, {
       method: 'POST',
@@ -38,6 +47,7 @@ export async function sendResendEmail(input: SendEmailInput): Promise<SendEmailR
       body: JSON.stringify({
         from: fromEmail,
         to: [input.to],
+        ...(bcc.length > 0 ? { bcc } : {}),
         subject: input.subject,
         html: input.html,
         text: input.text,

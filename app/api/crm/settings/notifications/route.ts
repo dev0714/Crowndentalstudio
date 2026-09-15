@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { assertRole } from '@/lib/auth/permissions';
 import { writeAuditEntry } from '@/lib/audit/write-audit-entry';
 import { getNotificationSettingsStatus, saveNotificationSettings } from '@/lib/settings/notifications';
+import { findInvalidRecipients, parseRecipientList } from '@/lib/notifications/recipients';
 
 function ensureSettingsAdminAccess(userRole: string) {
   assertRole(userRole, ['CEO', 'Admin']);
@@ -43,6 +44,16 @@ export async function PUT(request: NextRequest) {
       typeof body.lab_notifications_enabled === 'boolean' ? body.lab_notifications_enabled : undefined;
     const appointmentNotificationsEnabled =
       typeof body.appointment_notifications_enabled === 'boolean' ? body.appointment_notifications_enabled : undefined;
+    const copyRecipientsRaw = Array.isArray(body.copy_recipients)
+      ? body.copy_recipients.filter((entry: unknown) => typeof entry === 'string').join(',')
+      : typeof body.copy_recipients === 'string'
+        ? body.copy_recipients
+        : undefined;
+    const copyRecipients = copyRecipientsRaw === undefined ? undefined : parseRecipientList(copyRecipientsRaw);
+    const invalidRecipients = copyRecipientsRaw === undefined ? [] : findInvalidRecipients(copyRecipientsRaw);
+    if (invalidRecipients.length > 0) {
+      return NextResponse.json({ error: `Staff copy address not valid: ${invalidRecipients.join(', ')}` }, { status: 400 });
+    }
 
     // The from address may include a display name, e.g. "Crown Dental Studio <no-reply@x.co.za>".
     const emailToValidate = fromEmail?.trim().match(/<([^>]+)>/)?.[1] || fromEmail?.trim();
@@ -54,13 +65,14 @@ export async function PUT(request: NextRequest) {
       apiKey === undefined &&
       fromEmail === undefined &&
       labNotificationsEnabled === undefined &&
-      appointmentNotificationsEnabled === undefined
+      appointmentNotificationsEnabled === undefined &&
+      copyRecipients === undefined
     ) {
       return NextResponse.json({ error: 'No settings provided' }, { status: 400 });
     }
 
     const data = await saveNotificationSettings(
-      { apiKey, fromEmail, labNotificationsEnabled, appointmentNotificationsEnabled },
+      { apiKey, fromEmail, labNotificationsEnabled, appointmentNotificationsEnabled, copyRecipients },
       user.id,
     );
 
@@ -74,6 +86,7 @@ export async function PUT(request: NextRequest) {
         from_email_changed: fromEmail !== undefined,
         lab_notifications_enabled: data.lab_notifications_enabled,
         appointment_notifications_enabled: data.appointment_notifications_enabled,
+        copy_recipients: data.copy_recipients,
       },
     });
 

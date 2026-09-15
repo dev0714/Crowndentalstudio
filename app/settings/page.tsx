@@ -29,6 +29,7 @@ type NotificationSettingsStatus = {
   from_email: string;
   lab_notifications_enabled: boolean;
   appointment_notifications_enabled: boolean;
+  copy_recipients?: string[];
   updated_at: string | null;
 };
 
@@ -47,6 +48,7 @@ function SettingsPageContent() {
   const [fromEmail, setFromEmail] = useState('');
   const [labNotifEnabled, setLabNotifEnabled] = useState(true);
   const [apptNotifEnabled, setApptNotifEnabled] = useState(true);
+  const [copyRecipients, setCopyRecipients] = useState('');
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifError, setNotifError] = useState<string | null>(null);
   const [notifSuccess, setNotifSuccess] = useState<string | null>(null);
@@ -170,6 +172,7 @@ function SettingsPageContent() {
     setFromEmail(data?.from_email || '');
     setLabNotifEnabled(data?.lab_notifications_enabled ?? true);
     setApptNotifEnabled(data?.appointment_notifications_enabled ?? true);
+    setCopyRecipients((data?.copy_recipients || []).join(', '));
   };
 
   const handleSendTestEmail = async () => {
@@ -207,6 +210,7 @@ function SettingsPageContent() {
         from_email: fromEmail,
         lab_notifications_enabled: labNotifEnabled,
         appointment_notifications_enabled: apptNotifEnabled,
+        copy_recipients: copyRecipients,
       };
       if (resendKey.trim()) {
         body.resend_api_key = resendKey.trim();
@@ -438,6 +442,19 @@ function SettingsPageContent() {
                 <p className="text-xs text-slate-400">Must be a domain or address verified in your Resend account.</p>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Staff copies (BCC)</label>
+                <Input
+                  value={copyRecipients}
+                  onChange={(e) => setCopyRecipients(e.target.value)}
+                  placeholder="reception@yourdomain.co.za, manager@yourdomain.co.za"
+                  className="rounded-xl border-slate-200"
+                />
+                <p className="text-xs text-slate-400">
+                  These addresses receive a blind copy of every patient notification and the website enquiry alerts. Separate several with commas. Leave blank for none.
+                </p>
+              </div>
+
               <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -463,7 +480,7 @@ function SettingsPageContent() {
               </label>
 
               <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={handleSaveNotifications} disabled={notifSaving} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+                <Button onClick={handleSaveNotifications} disabled={notifSaving} className="bg-navy-800 hover:bg-ink text-white border-0">
                   <Save className="w-4 h-4 mr-2" />
                   {notifSaving ? 'Saving…' : 'Save Notification Settings'}
                 </Button>

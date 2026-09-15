@@ -74,7 +74,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         onClick={onNavigate}
         className="flex items-center gap-3 px-5 py-5 border-b border-white/10 text-white hover:text-white"
       >
-        <Logo variant="icon" className="h-8 w-auto brightness-0 invert" />
+        <Logo variant="icon" className="h-9 w-auto" />
         <div className="leading-none">
           <p className="font-display text-[19px] font-medium">Crown Dental Studio</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-white/40 mt-1.5">Practice portal</p>

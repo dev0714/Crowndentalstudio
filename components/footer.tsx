@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Facebook, Instagram, Linkedin, Phone, Mail, MapPin } from 'lucide-react'
-import { Logo } from './logo'
+import { Logo, BRAND_TAGLINE } from './logo'
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -55,8 +55,11 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-10 lg:gap-12">
           <div>
             <div className="flex items-center gap-3">
-              <Logo variant="icon" className="h-8 w-auto" />
-              <span className="font-display text-[20px] font-medium text-ink">Crown Dental Studio</span>
+              <Logo variant="icon" className="h-10 w-auto" />
+              <div className="leading-none">
+                <span className="font-display text-[20px] font-medium text-ink block">Crown Dental Studio</span>
+                <span className="mt-1 block text-[12px] font-semibold text-teal">{BRAND_TAGLINE}</span>
+              </div>
             </div>
             <p className="mt-4 max-w-[320px] text-[14px] leading-relaxed text-muted-ink">
               Family and cosmetic dentistry in Durban North, with a 24-hour on-call line when urgent care is needed.

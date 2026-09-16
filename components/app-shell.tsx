@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, Bell, ChevronRight, Menu } from 'lucide-react';
+import { Search, ChevronRight, Menu } from 'lucide-react';
+import { NotificationsBell } from './notifications-bell';
 import { Sidebar, SidebarNav } from './sidebar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { fetchCurrentSessionUser } from '@/lib/auth/session-client';
@@ -17,7 +18,7 @@ interface PatientResult {
   email?: string;
 }
 
-function TopBar({ currentUser, onMenu }: { currentUser: PublicAuthUser | null; onMenu: () => void }) {
+function TopBar({ onMenu }: { onMenu: () => void }) {
   const router = useRouter();
   const [query, setQuery]           = useState('');
   const [results, setResults]       = useState<PatientResult[]>([]);
@@ -59,9 +60,6 @@ function TopBar({ currentUser, onMenu }: { currentUser: PublicAuthUser | null; o
     }, 300);
     return () => clearTimeout(debounceRef.current);
   }, [query]);
-
-  const initials = (name?: string | null) =>
-    name ? name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() : 'U';
 
   return (
     <header className="flex-shrink-0 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 bg-white border-b border-hairline z-30">
@@ -138,24 +136,9 @@ function TopBar({ currentUser, onMenu }: { currentUser: PublicAuthUser | null; o
         )}
       </div>
 
-      {/* Right */}
+      {/* Right: the account lives in the sidebar, so only the notifications bell sits here */}
       <div className="flex items-center gap-2 ml-auto">
-        <button className="relative p-2 text-muted-ink hover:text-ink hover:bg-cream rounded-full transition-colors">
-          <Bell className="w-[1.1rem] h-[1.1rem]" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-        </button>
-
-        {currentUser && (
-          <div className="flex items-center gap-2 pl-2 border-l border-hairline ml-1">
-            <div className="w-7 h-7 rounded-full bg-navy-800 flex items-center justify-center text-white font-semibold text-[11px]">
-              {initials(currentUser.full_name)}
-            </div>
-            <div className="hidden sm:block leading-none">
-              <p className="text-[12px] font-semibold text-slate-900">{currentUser.full_name}</p>
-              <p className="text-[11px] text-slate-500">{currentUser.role}</p>
-            </div>
-          </div>
-        )}
+        <NotificationsBell />
       </div>
     </header>
   );
@@ -221,7 +204,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Sheet>
 
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <TopBar currentUser={currentUser} onMenu={() => setNavOpen(true)} />
+          <TopBar onMenu={() => setNavOpen(true)} />
           <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>

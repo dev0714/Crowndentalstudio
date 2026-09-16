@@ -37,7 +37,7 @@ export default function LoginPage() {
           </Link>
 
           <div className="flex items-center gap-3 mb-8">
-            <Logo variant="icon" className="h-9 w-auto" />
+            <Logo variant="icon" className="h-11 w-auto" />
             <span className="font-display text-[22px] leading-none font-medium text-ink">Crown Dental Studio</span>
           </div>
 

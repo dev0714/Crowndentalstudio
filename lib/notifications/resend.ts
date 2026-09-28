@@ -13,6 +13,10 @@ export type SendEmailInput = {
   bcc?: string[];
   /** BCC the practice's configured staff copy recipients. Defaults to true. */
   copyStaff?: boolean;
+  /** Address replies should go to, when different from the sender. */
+  replyTo?: string;
+  /** Extra message headers, e.g. In-Reply-To for threading. */
+  headers?: Record<string, string>;
 };
 
 export type SendEmailResult =
@@ -48,6 +52,8 @@ export async function sendResendEmail(input: SendEmailInput): Promise<SendEmailR
         from: fromEmail,
         to: [input.to],
         ...(bcc.length > 0 ? { bcc } : {}),
+        ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+        ...(input.headers && Object.keys(input.headers).length > 0 ? { headers: input.headers } : {}),
         subject: input.subject,
         html: input.html,
         text: input.text,

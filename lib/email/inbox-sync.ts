@@ -76,6 +76,7 @@ export async function runInboxSync(mode: SyncMode, triggeredBy: string): Promise
           importance_reason: verdict.reason,
           classified_by: 'rules',
           sender_kind: null,
+          message_id: email.messageId || null,
         };
         return row;
       });

@@ -22,6 +22,7 @@ function shiftKey(key: string, days: number) {
 
 function toApiEmail(row: StoredEmail) {
   return {
+    id: row.id,
     uid: row.uid,
     from: row.from_name || row.from_email || '',
     fromEmail: row.from_email || '',

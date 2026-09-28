@@ -1,4 +1,4 @@
-import type { EmailGroupKey, GroupableEmail } from '@/lib/email/email-grouping';
+import { PRACTICE_OWN_ADDRESSES, type EmailGroupKey, type GroupableEmail } from '@/lib/email/email-grouping';
 
 export type ImportanceVerdict = { important: boolean; reason: string };
 
@@ -19,6 +19,17 @@ export function classifyImportance(email: GroupableEmail, group: EmailGroupKey):
   const sender = email.fromEmail || '';
   const automated = AUTOMATED_SENDER.test(sender);
 
+  if (group === 'patient_enquiries') {
+    return { important: true, reason: 'Patient enquiry: reply promptly' };
+  }
+  if (PRACTICE_OWN_ADDRESSES.test(sender.trim())) {
+    return { important: true, reason: 'From practice staff' };
+  }
+  if (/(^|\.)leadsync\.co\.za$/i.test(sender.split('@')[1] || '')) {
+    return /support ticket|outstanding items/i.test(subject)
+      ? { important: true, reason: 'CRM vendor: support ticket or outstanding items' }
+      : { important: false, reason: 'CRM vendor notification' };
+  }
   if (group === 'personal') {
     return { important: false, reason: 'Personal, social or travel mail' };
   }

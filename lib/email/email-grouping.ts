@@ -59,6 +59,10 @@ const DOMAIN_RULES: Array<{ match: RegExp; group: EmailGroupKey }> = [
   // Dental suppliers and labs.
   { match: /(^|\.)(kzndental\.co\.za|wright-millners\.co\.za|dentiphoto\.com|henryschein\.(co\.za|com)|dentsply\.com|ivoclar\.com|3m\.com|colgateprofessional\.com|dentalwarehouse\.co\.za)$/i, group: 'suppliers' },
   { match: /(ridge(dental|lab)|dentallab|\.lab\.|prolab|dentaltech)/i, group: 'lab' },
+  // Other dental clinics, product companies and training vendors: their mail is outreach, never a patient.
+  { match: /(^|\.)(roott\.(dental|ae)|enamel\.clinic|dental-care\.co\.za|myobrace\.(com|co\.za)|dentalcourses|smilelab|aligner)/i, group: 'marketing' },
+  // The practice's CRM vendor and its own staff mailbox: internal, not patients.
+  { match: /(^|\.)(leadsync\.co\.za)$/i, group: 'other' },
   // Professional bodies and dental events: read at leisure.
   { match: /(^|\.)(sada\.co\.za|hpcsa\.co\.za|cappmea\.com|dentalexpo|aacd\.com)$/i, group: 'marketing' },
   // Personal life and travel that lands in the same inbox.
@@ -83,8 +87,11 @@ function senderDomain(fromEmail: string) {
   return (fromEmail.split('@')[1] || '').toLowerCase();
 }
 
+export const PRACTICE_OWN_ADDRESSES = /^(crowndentalstudio09@gmail\.com|info@crowndentalstudio\.co\.za)$/i;
+
 export function classifyEmail(email: GroupableEmail): EmailGroupKey {
   const domain = senderDomain(email.fromEmail);
+  if (PRACTICE_OWN_ADDRESSES.test(email.fromEmail.trim())) return 'other';
   const haystack = `${email.subject} ${email.from}`;
 
   for (const rule of DOMAIN_RULES) {

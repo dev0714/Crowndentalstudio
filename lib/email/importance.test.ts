@@ -9,6 +9,8 @@ test('money, deadlines and clinical matters from people are important', () => {
   assert.equal(classifyImportance(mail('Diners Club statement', 'statements@dinersclub.co.za'), 'accounts').important, true);
   assert.equal(classifyImportance(mail('Appointment for my son', 'mum@gmail.com'), 'appointments').important, true);
   assert.equal(classifyImportance(mail('Question about implants', 'someone@gmail.com'), 'patient_enquiries').important, true);
+  // Even from an address that looks automated (web form relays), a patient enquiry is important.
+  assert.equal(classifyImportance(mail('New enquiry from website', 'noreply@formrelay.com'), 'patient_enquiries').important, true);
 });
 
 test('marketing, promotions and system notices are not important', () => {

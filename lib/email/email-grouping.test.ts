@@ -18,6 +18,13 @@ describe('email grouping', () => {
     assert.equal(classifyEmail(email('Call for competition submissions', 'news@sada.co.za')), 'marketing');
   });
 
+  it('never files other dental businesses or the CRM vendor as patient enquiries', () => {
+    assert.equal(classifyEmail(email('Will you be in Dubai this January?', 'kateryna@roott.dental')), 'marketing');
+    assert.equal(classifyEmail(email('Invest in Your Smile', 'hello@enamel.clinic')), 'marketing');
+    assert.equal(classifyEmail(email('Re: Support Ticket TK-1 — Patient communication', 'leads@notification.leadsync.co.za')), 'other');
+    assert.equal(classifyEmail(email('Mr Patel Ismail', 'crowndentalstudio09@gmail.com')), 'other');
+  });
+
   it('keeps supplier invoices with suppliers but their promotions in marketing', () => {
     assert.equal(classifyEmail(email('Invoice INV-2201', 'accounts@kzndental.co.za')), 'suppliers');
     assert.equal(classifyEmail(email('🚨 MELAG MADNESS 20% off', 'promo@wright-millners.co.za')), 'marketing');

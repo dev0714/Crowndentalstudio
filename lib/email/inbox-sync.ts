@@ -23,6 +23,14 @@ const DAILY_OVERLAP_MS = 2 * DAY_MS;
 
 export type SyncMode = 'backfill' | 'daily' | 'reclassify';
 
+/** Rules that hold whatever the model said: a patient enquiry always needs a reply. */
+export function enforceHardRules(row: { group_key: string; is_important: boolean; importance_reason: string | null }) {
+  if (row.group_key === 'patient_enquiries' && !row.is_important) {
+    row.is_important = true;
+    row.importance_reason = 'Patient enquiry: reply promptly';
+  }
+}
+
 export type SyncResult = {
   mode: SyncMode;
   since: string;
@@ -97,6 +105,7 @@ export async function runInboxSync(mode: SyncMode, triggeredBy: string, options:
       });
     }
 
+    rows.forEach(enforceHardRules);
     const stored = await upsertStoredEmails(rows);
     await markInboxSynced(now);
     if (mode === 'backfill') await markBackfillComplete(now);
@@ -129,13 +138,15 @@ async function reclassifyStoredEmails(triggeredBy: string, options: { limit?: nu
       for (const row of pending) {
         const verdict = verdicts.get(row.uid);
         if (!verdict) continue;
-        await applyClassification(row.id, {
-          group_key: verdict.group,
+        const patch = {
+          group_key: verdict.group as string,
           is_important: verdict.important,
           importance_reason: verdict.reason || row.importance_reason || '',
           sender_kind: verdict.senderKind || null,
-          classified_by: 'ai',
-        });
+          classified_by: 'ai' as const,
+        };
+        enforceHardRules(patch);
+        await applyClassification(row.id, patch);
         sliceUpdated += 1;
       }
       looked += pending.length;

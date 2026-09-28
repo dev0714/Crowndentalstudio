@@ -20,6 +20,8 @@ type ApiEmail = {
   group: string;
   important: boolean;
   reason: string;
+  senderKind: string;
+  classifiedBy: 'rules' | 'ai';
 };
 
 type SyncState = {
@@ -27,6 +29,7 @@ type SyncState = {
   backfill_completed_at: string | null;
   stored_total: number;
   oldest_stored_at: string | null;
+  awaiting_ai: number;
   last_run: { mode?: string; started_at?: string; finished_at?: string | null; fetched?: number; stored?: number; error?: string | null } | null;
 };
 
@@ -82,7 +85,7 @@ function EmailsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notConfigured, setNotConfigured] = useState(false);
-  const [syncing, setSyncing] = useState<'backfill' | 'daily' | null>(null);
+  const [syncing, setSyncing] = useState<'backfill' | 'daily' | 'reclassify' | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [bucket, setBucket] = useState<Bucket>('important');
   const [group, setGroup] = useState<string | null>(null);
@@ -127,7 +130,7 @@ function EmailsContent() {
     load(range);
   };
 
-  const runSync = async (mode: 'backfill' | 'daily') => {
+  const runSync = async (mode: 'backfill' | 'daily' | 'reclassify') => {
     setSyncing(mode);
     setSyncMessage(null);
     setError(null);
@@ -140,11 +143,13 @@ function EmailsContent() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'Sync failed');
-      const result = payload.data as { fetched: number; stored: number };
+      const result = payload.data as { fetched: number; stored: number; ai_classified: number };
       setSyncMessage(
         mode === 'backfill'
-          ? `Pulled ${result.fetched} emails from the last three months. From now on the inbox is synced automatically every morning.`
-          : `Checked the inbox: ${result.fetched} email${result.fetched === 1 ? '' : 's'} in the sync window, ${result.stored} stored.`,
+          ? `Pulled ${result.fetched} emails from the last three months${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}. From now on the inbox is synced automatically every morning.`
+          : mode === 'reclassify'
+            ? `AI re-sorted ${result.stored} of ${result.fetched} emails${result.fetched === 400 ? '. Press again to continue with the rest.' : '.'}`
+            : `Checked the inbox: ${result.fetched} email${result.fetched === 1 ? '' : 's'} in the sync window, ${result.stored} stored${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}.`,
       );
       if (mode === 'backfill') {
         applyRange(shiftKey(today, -92), today);
@@ -199,6 +204,12 @@ function EmailsContent() {
             <Button onClick={() => runSync('backfill')} disabled={Boolean(syncing)} className="bg-navy-800 hover:bg-ink text-white border-0 text-xs">
               <DownloadCloud className={`w-4 h-4 mr-2 ${syncing === 'backfill' ? 'animate-bounce' : ''}`} />
               {syncing === 'backfill' ? 'Pulling 3 months…' : 'Pull last 3 months'}
+            </Button>
+          )}
+          {(sync?.awaiting_ai ?? 0) > 0 && (
+            <Button onClick={() => runSync('reclassify')} disabled={Boolean(syncing)} variant="outline" className="text-xs border-teal/40 text-teal hover:text-ink">
+              <Sparkles className={`w-4 h-4 mr-2 ${syncing === 'reclassify' ? 'animate-pulse' : ''}`} />
+              {syncing === 'reclassify' ? 'Sorting with AI…' : `Sort ${sync?.awaiting_ai} with AI`}
             </Button>
           )}
           <Button onClick={() => runSync('daily')} disabled={Boolean(syncing) || notConfigured} variant="outline" className="text-xs border-slate-200">
@@ -405,6 +416,7 @@ function EmailsContent() {
                                 <p className="text-xs text-slate-500 mt-0.5 truncate">
                                   {email.from}
                                   {email.fromEmail && email.from !== email.fromEmail ? ` · ${email.fromEmail}` : ''}
+                                  {email.senderKind ? ` · ${email.senderKind}` : ''}
                                   {email.reason ? ` · ${email.reason}` : ''}
                                 </p>
                               </div>

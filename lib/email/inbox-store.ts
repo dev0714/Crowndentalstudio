@@ -13,6 +13,8 @@ export type StoredEmail = {
   group_key: EmailGroupKey;
   is_important: boolean;
   importance_reason: string | null;
+  classified_by?: 'rules' | 'ai';
+  sender_kind?: string | null;
 };
 
 export type StoredEmailInput = Omit<StoredEmail, 'id'> & { mailbox: string };
@@ -38,7 +40,7 @@ export async function upsertStoredEmails(rows: StoredEmailInput[]) {
 export async function queryStoredEmails(input: { from: Date; to: Date; limit?: number }) {
   const { data, error } = await supabaseServer
     .from('inbox_emails')
-    .select('id, uid, from_name, from_email, subject, received_at, group_key, is_important, importance_reason')
+    .select('id, uid, from_name, from_email, subject, received_at, group_key, is_important, importance_reason, classified_by, sender_kind')
     .gte('received_at', input.from.toISOString())
     .lte('received_at', input.to.toISOString())
     .order('received_at', { ascending: false })
@@ -72,18 +74,20 @@ async function writeSetting(key: string, value: string, description: string) {
 }
 
 export async function getInboxSyncState() {
-  const [lastSyncedAt, backfillCompletedAt, total, oldest, lastRun] = await Promise.all([
+  const [lastSyncedAt, backfillCompletedAt, total, oldest, lastRun, awaitingAi] = await Promise.all([
     readSetting(INBOX_LAST_SYNCED_SETTING),
     readSetting(INBOX_BACKFILL_DONE_SETTING),
     countStoredEmails(),
     oldestStoredEmailDate(),
     supabaseServer.from('inbox_sync_runs').select('mode, started_at, finished_at, fetched, stored, error').order('started_at', { ascending: false }).limit(1).maybeSingle(),
+    countRuleClassifiedEmails(),
   ]);
   return {
     last_synced_at: lastSyncedAt,
     backfill_completed_at: backfillCompletedAt,
     stored_total: total,
     oldest_stored_at: oldest,
+    awaiting_ai: awaitingAi,
     last_run: (lastRun.data as Record<string, unknown> | null) || null,
   };
 }
@@ -111,4 +115,27 @@ export async function finishSyncRun(id: string, result: { fetched: number; store
     .from('inbox_sync_runs')
     .update({ finished_at: new Date().toISOString(), fetched: result.fetched, stored: result.stored, error: result.error || null })
     .eq('id', id);
+}
+
+/** Stored rows the model has not yet looked at, oldest first, for a reclassification pass. */
+export async function listRuleClassifiedEmails(limit = 400) {
+  const { data, error } = await supabaseServer
+    .from('inbox_emails')
+    .select('id, uid, from_name, from_email, subject, received_at, group_key, is_important, importance_reason, classified_by, sender_kind')
+    .eq('classified_by', 'rules')
+    .order('received_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data || []) as StoredEmail[];
+}
+
+export async function countRuleClassifiedEmails() {
+  const { count, error } = await supabaseServer.from('inbox_emails').select('id', { count: 'exact', head: true }).eq('classified_by', 'rules');
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function applyClassification(id: string, patch: { group_key: string; is_important: boolean; importance_reason: string; sender_kind: string | null; classified_by: 'rules' | 'ai' }) {
+  const { error } = await supabaseServer.from('inbox_emails').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw new Error(error.message);
 }

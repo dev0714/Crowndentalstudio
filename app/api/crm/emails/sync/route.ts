@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json().catch(() => ({}));
-    const mode: SyncMode = body.mode === 'backfill' ? 'backfill' : 'daily';
+    const mode: SyncMode = body.mode === 'backfill' ? 'backfill' : body.mode === 'reclassify' ? 'reclassify' : 'daily';
 
     const result = await runInboxSync(mode, `user:${user.id}`);
 
     await writeAuditEntry({
       actor: user,
-      action: mode === 'backfill' ? 'inbox.backfilled' : 'inbox.synced',
+      action: mode === 'backfill' ? 'inbox.backfilled' : mode === 'reclassify' ? 'inbox.reclassified' : 'inbox.synced',
       entityType: 'setting',
       entityId: 'inbox',
       metadata: result,

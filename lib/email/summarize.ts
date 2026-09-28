@@ -21,7 +21,7 @@ function buildPromptInput(groups: EmailGroupSummary[]) {
     .join('\n\n');
 }
 
-export async function summarizeEmailDigest(groups: EmailGroupSummary[]): Promise<EmailDigest | null> {
+export async function summarizeEmailDigest(groups: EmailGroupSummary[], periodLabel = 'the last 48 hours'): Promise<EmailDigest | null> {
   const total = groups.reduce((sum, group) => sum + group.count, 0);
   if (total === 0) {
     return { summary: 'No emails were received in the selected period.', highlights: [] };
@@ -49,13 +49,13 @@ export async function summarizeEmailDigest(groups: EmailGroupSummary[]): Promise
         {
           role: 'system',
           content:
-            'You are an assistant for a dental practice front desk. You are given the last 48 hours of inbound emails, already sorted into groups (' +
+            'You are an assistant for a dental practice front desk. You are given the inbound emails from ' + periodLabel + ' that staff flagged as worth reading, already sorted into groups (' +
             groupList +
             '). Write a concise operational summary for staff. Respond ONLY as JSON with keys "summary" (2-4 sentence string overview) and "highlights" (array of up to 6 short strings, each a specific item that needs attention, most urgent first). Do not invent emails that are not listed.',
         },
         {
           role: 'user',
-          content: `Here are the ${total} emails from the last 48 hours by group:\n\n${buildPromptInput(groups)}`,
+          content: `Here are the ${total} emails from ${periodLabel} by group:\n\n${buildPromptInput(groups)}`,
         },
       ],
     }),

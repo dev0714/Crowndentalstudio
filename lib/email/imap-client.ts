@@ -12,6 +12,8 @@ export type FetchedEmail = {
   date: string;
 };
 
+const FETCH_CHUNK = 250;
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // IMAP SEARCH SINCE wants a DD-Mon-YYYY date.
@@ -235,13 +237,17 @@ export async function fetchRecentEmails(
       return [];
     }
 
-    // Newest first, capped.
+    // Newest first, capped, fetched in chunks so a long backfill never sends one
+    // enormous command or waits on a single huge response.
     const selected = uids.map(Number).sort((a, b) => b - a).slice(0, max);
-    const fetchResponse = await session.run(
-      `UID FETCH ${selected.join(',')} (BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`,
-    );
-
-    const emails = parseFetchResponse(fetchResponse);
+    const emails: FetchedEmail[] = [];
+    for (let index = 0; index < selected.length; index += FETCH_CHUNK) {
+      const chunk = selected.slice(index, index + FETCH_CHUNK);
+      const fetchResponse = await session.run(
+        `UID FETCH ${chunk.join(',')} (BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`,
+      );
+      emails.push(...parseFetchResponse(fetchResponse));
+    }
     // Filter again on the parsed Date header in case the server is generous with SINCE.
     const cutoff = sinceDate.getTime();
     return emails

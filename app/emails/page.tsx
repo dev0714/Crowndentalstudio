@@ -54,6 +54,7 @@ const GROUP_LABEL: Record<string, string> = {
   suppliers: 'Suppliers',
   patient_enquiries: 'Patient enquiries',
   marketing: 'Marketing & Notifications',
+  personal: 'Personal & travel',
   other: 'Other',
 };
 
@@ -64,6 +65,7 @@ const GROUP_CHIP: Record<string, string> = {
   suppliers: 'bg-[#b8742e] text-white',
   patient_enquiries: 'bg-[#2f5f86] text-white',
   marketing: 'bg-[#5b6b7f] text-white',
+  personal: 'bg-[#8a94a3] text-white',
   other: 'bg-slate-400 text-white',
 };
 
@@ -133,25 +135,52 @@ function EmailsContent() {
     load(range);
   };
 
+  const [sortProgress, setSortProgress] = useState<{ done: number; total: number } | null>(null);
+
   const runSync = async (mode: 'backfill' | 'daily' | 'reclassify') => {
     setSyncing(mode);
     setSyncMessage(null);
     setError(null);
     try {
-      const response = await fetch('/api/crm/emails/sync', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || 'Sync failed');
-      const result = payload.data as { fetched: number; stored: number; ai_classified: number };
+      let result = { fetched: 0, stored: 0, ai_classified: 0 };
+      if (mode === 'reclassify') {
+        // Keep asking for more until nothing is left; each request handles up to 800.
+        const total = sync?.awaiting_ai ?? 0;
+        let remaining = total;
+        let sorted = 0;
+        setSortProgress({ done: 0, total });
+        while (remaining > 0) {
+          const response = await fetch('/api/crm/emails/sync', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'reclassify', limit: 800 }),
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || 'Sorting failed');
+          const step = payload.data as { fetched: number; stored: number; sync?: SyncState };
+          sorted += step.stored;
+          remaining = step.sync?.awaiting_ai ?? Math.max(0, remaining - step.fetched);
+          setSortProgress({ done: sorted, total });
+          if (step.stored === 0) break;
+        }
+        result = { fetched: total, stored: sorted, ai_classified: sorted };
+      } else {
+        const response = await fetch('/api/crm/emails/sync', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'Sync failed');
+        result = payload.data as { fetched: number; stored: number; ai_classified: number };
+      }
       setSyncMessage(
         mode === 'backfill'
           ? `Pulled ${result.fetched} emails from the last three months${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}. From now on the inbox is synced automatically every morning.`
           : mode === 'reclassify'
-            ? `AI re-sorted ${result.stored} of ${result.fetched} emails${result.fetched === 400 ? '. Press again to continue with the rest.' : '.'}`
+            ? `AI re-sorted ${result.stored} of ${result.fetched} emails.`
             : `Checked the inbox: ${result.fetched} email${result.fetched === 1 ? '' : 's'} in the sync window, ${result.stored} stored${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}.`,
       );
       if (mode === 'backfill') {
@@ -163,6 +192,7 @@ function EmailsContent() {
       setError(err instanceof Error ? err.message : 'Sync failed');
     } finally {
       setSyncing(null);
+      setSortProgress(null);
     }
   };
 
@@ -212,7 +242,7 @@ function EmailsContent() {
           {(sync?.awaiting_ai ?? 0) > 0 && (
             <Button onClick={() => runSync('reclassify')} disabled={Boolean(syncing)} variant="outline" className="text-xs border-teal/40 text-teal hover:text-ink">
               <Sparkles className={`w-4 h-4 mr-2 ${syncing === 'reclassify' ? 'animate-pulse' : ''}`} />
-              {syncing === 'reclassify' ? 'Sorting with AI…' : `Sort ${sync?.awaiting_ai} with AI`}
+              {syncing === 'reclassify' ? `Sorting… ${sortProgress?.done ?? 0} of ${sortProgress?.total ?? sync?.awaiting_ai}` : `Sort ${sync?.awaiting_ai} with AI`}
             </Button>
           )}
           <Button onClick={() => runSync('daily')} disabled={Boolean(syncing) || notConfigured} variant="outline" className="text-xs border-slate-200">
@@ -242,6 +272,12 @@ function EmailsContent() {
       {error && (
         <div className="max-w-6xl mx-auto rounded-xl border border-red-200 bg-red-50 p-4">
           <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
+      {syncing === 'reclassify' && (
+        <div className="max-w-6xl mx-auto rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+          The AI is reading each sender and subject and re-sorting the stored emails. {sortProgress?.total ?? 0} to go through; leave this page open.
         </div>
       )}
 

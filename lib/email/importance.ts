@@ -19,8 +19,14 @@ export function classifyImportance(email: GroupableEmail, group: EmailGroupKey):
   const sender = email.fromEmail || '';
   const automated = AUTOMATED_SENDER.test(sender);
 
+  if (group === 'personal') {
+    return { important: false, reason: 'Personal, social or travel mail' };
+  }
   if (group === 'marketing') {
     return { important: false, reason: 'Marketing or automated notification' };
+  }
+  if (group === 'accounts' && /(investec|nedbank|standardbank|absa|fnb|capitec|paypal|ikhokha|yoco|payfast|mediswitch|e-md|discovery|healthbridge|momentum|bonitas)\./i.test(sender)) {
+    return { important: true, reason: /statement|remittance|report/i.test(subject) ? 'Bank or medical aid statement' : 'Bank or medical aid notice' };
   }
   if (PROMO_SUBJECT.test(subject)) {
     return { important: false, reason: 'Promotional or system notice' };

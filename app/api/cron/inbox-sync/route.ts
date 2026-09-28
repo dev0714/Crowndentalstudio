@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
     // The first scheduled run on a fresh install does the full backfill; after that it is incremental.
     const mode = state.backfill_completed_at ? 'daily' : 'backfill';
     const result = await runInboxSync(mode, 'cron');
-    return NextResponse.json({ data: result });
+    // Anything still sorted by rules only (e.g. after an AI outage) gets the model's verdict now.
+    const after = await getInboxSyncState();
+    const reclassified = after.awaiting_ai > 0 ? await runInboxSync('reclassify', 'cron', { limit: 600, timeBudgetMs: 150_000 }).catch(() => null) : null;
+    return NextResponse.json({ data: { ...result, reclassified } });
   } catch (error) {
     console.error('Scheduled inbox sync failed:', error);
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Inbox sync failed' }, { status: 502 });

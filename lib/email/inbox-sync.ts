@@ -37,8 +37,8 @@ export type SyncResult = {
  * - daily: everything since the last sync, with a two-day overlap so nothing is missed;
  *   the (mailbox, uid) unique key makes re-storing harmless.
  */
-export async function runInboxSync(mode: SyncMode, triggeredBy: string): Promise<SyncResult> {
-  if (mode === 'reclassify') return reclassifyStoredEmails(triggeredBy);
+export async function runInboxSync(mode: SyncMode, triggeredBy: string, options: { limit?: number; timeBudgetMs?: number } = {}): Promise<SyncResult> {
+  if (mode === 'reclassify') return reclassifyStoredEmails(triggeredBy, options);
   const config = await getImapConfig();
   if (!config) {
     throw new Error('Email inbox is not configured. Add your IMAP details in Settings.');
@@ -109,30 +109,42 @@ export async function runInboxSync(mode: SyncMode, triggeredBy: string): Promise
 }
 
 /** Runs the model over stored emails that only have a rule-based verdict (for example, from a pull made before the AI pass existed). */
-async function reclassifyStoredEmails(triggeredBy: string): Promise<SyncResult> {
+async function reclassifyStoredEmails(triggeredBy: string, options: { limit?: number; timeBudgetMs?: number }): Promise<SyncResult> {
   const now = new Date();
+  const limit = Math.min(Math.max(options.limit ?? 800, 40), 3000);
+  const deadline = Date.now() + (options.timeBudgetMs ?? 200_000);
   const runId = await recordSyncRun({ mode: 'reclassify', since: now, triggeredBy });
   try {
-    const pending = await listRuleClassifiedEmails(400);
-    const verdicts = await classifyEmailsWithAi(
-      pending.map((row) => ({ uid: row.uid, from: row.from_name || '', fromEmail: row.from_email || '', subject: row.subject || '' })),
-    );
-    if (!verdicts) throw new Error('Add an OpenAI API key in Settings to sort emails with AI');
+    let looked = 0;
     let updated = 0;
-    for (const row of pending) {
-      const verdict = verdicts.get(row.uid);
-      if (!verdict) continue;
-      await applyClassification(row.id, {
-        group_key: verdict.group,
-        is_important: verdict.important,
-        importance_reason: verdict.reason || row.importance_reason || '',
-        sender_kind: verdict.senderKind || null,
-        classified_by: 'ai',
-      });
-      updated += 1;
+    // Work in slices so a partial run still commits progress and stays inside the function time limit.
+    while (looked < limit && Date.now() < deadline) {
+      const pending = await listRuleClassifiedEmails(Math.min(200, limit - looked));
+      if (pending.length === 0) break;
+      const verdicts = await classifyEmailsWithAi(
+        pending.map((row) => ({ uid: row.uid, from: row.from_name || '', fromEmail: row.from_email || '', subject: row.subject || '' })),
+      );
+      if (!verdicts) throw new Error('Add an OpenAI API key in Settings to sort emails with AI');
+      let sliceUpdated = 0;
+      for (const row of pending) {
+        const verdict = verdicts.get(row.uid);
+        if (!verdict) continue;
+        await applyClassification(row.id, {
+          group_key: verdict.group,
+          is_important: verdict.important,
+          importance_reason: verdict.reason || row.importance_reason || '',
+          sender_kind: verdict.senderKind || null,
+          classified_by: 'ai',
+        });
+        sliceUpdated += 1;
+      }
+      looked += pending.length;
+      updated += sliceUpdated;
+      // If the model answered for none of them (outage), stop rather than spin on the same rows.
+      if (sliceUpdated === 0) break;
     }
-    await finishSyncRun(runId, { fetched: pending.length, stored: updated });
-    return { mode: 'reclassify', since: now.toISOString(), fetched: pending.length, stored: updated, ai_classified: updated };
+    await finishSyncRun(runId, { fetched: looked, stored: updated });
+    return { mode: 'reclassify', since: now.toISOString(), fetched: looked, stored: updated, ai_classified: updated };
   } catch (error) {
     await finishSyncRun(runId, { fetched: 0, stored: 0, error: error instanceof Error ? error.message : 'Reclassify failed' });
     throw error;

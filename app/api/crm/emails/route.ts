@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth/current-user';
 import { getImapConfig } from '@/lib/settings/email-inbox';
-import { EMAIL_GROUP_LABELS, type EmailGroupKey, type EmailGroupSummary } from '@/lib/email/email-grouping';
+import { EMAIL_GROUP_LABELS, EMAIL_GROUP_ORDER, type EmailGroupSummary } from '@/lib/email/email-grouping';
 import { summarizeEmailDigest } from '@/lib/email/summarize';
 import { getInboxSyncState, queryStoredEmails, type StoredEmail } from '@/lib/email/inbox-store';
 
@@ -36,7 +36,7 @@ function toApiEmail(row: StoredEmail) {
   };
 }
 
-const GROUP_ORDER: EmailGroupKey[] = ['lab', 'appointments', 'accounts', 'suppliers', 'patient_enquiries', 'marketing', 'other'];
+const GROUP_ORDER = EMAIL_GROUP_ORDER;
 
 export async function GET(request: NextRequest) {
   try {

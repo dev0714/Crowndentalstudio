@@ -7,14 +7,21 @@ export type ClassifiableEmail = { uid: string; from: string; fromEmail: string; 
 
 const BATCH = 40;
 
-const SYSTEM_PROMPT = `You sort inbound email for the front desk of Crown Dental Studio, a family and cosmetic dental practice in Durban North, South Africa. For each email you get the sender name, sender address and subject line only.
+const SYSTEM_PROMPT = `You sort inbound email for the front desk of Crown Dental Studio, a family and cosmetic dental practice in Durban North, South Africa. The mailbox is the principal dentist's Gmail, so practice mail is mixed with personal mail. For each email you get the sender name, sender address and subject line only.
 
 Use what you know about the sender organisation and the wording of the subject to decide, the way an experienced receptionist would:
-- group: one of appointments, lab, accounts, suppliers, patient_enquiries, marketing, other.
-  appointments = a patient or staff member about a booking; lab = a dental laboratory about cases, impressions, crowns, dentures, invoices from the lab; accounts = banks, card statements, medical aid schemes, invoices or payments the practice must act on; suppliers = dental or office suppliers about orders, deliveries or quotes the practice asked for; patient_enquiries = a member of the public asking about treatment, prices or emergencies; marketing = newsletters, promotions, cold outreach, marketplace pitches (Alibaba, GoDaddy upsells, SaaS trials), social media and app notifications; other = anything else.
-- important: true only if a person at the practice should read it soon. Money owed or due, patient or lab matters, medical aid, regulatory or bank notices are important. Promotions, cold sales pitches, domain or hosting upsells, automatic renewal FYIs, social notifications, newsletters, receipts for subscriptions already paid and system alerts are not important.
-- reason: one short plain sentence a receptionist would find useful, naming what the sender is (e.g. "GoDaddy domain upsell", "Diners Club card statement", "Ridge Dental lab invoice").
-- sender_kind: two or three words describing the sender type (e.g. "Dental lab", "Bank", "Domain registrar", "Patient", "Supplier marketplace").
+- group: one of appointments, lab, accounts, suppliers, patient_enquiries, marketing, personal, other.
+  appointments = a patient or staff member about a dental booking (NOT hotel, flight or ride bookings);
+  lab = a dental laboratory about cases, impressions, crowns, dentures, or a lab's invoice;
+  accounts = banks and cards (Investec, Nedbank, Standard Bank, Absa, FNB, Capitec, Amex, Diners Club, PayPal, iKhokha, Yoco), medical aid schemes and claim switches (Mediswitch, eMD, Discovery, Momentum, Bonitas, GEMS, Healthbridge), SARS, invoices, statements, remittances or payments the practice must watch;
+  suppliers = dental or office suppliers (KZN Dental, Wright-Millners, Dentiphoto, Henry Schein, Dentsply, Ivoclar) about orders, deliveries, quotes or invoices the practice asked for;
+  patient_enquiries = a member of the public asking about treatment, prices, an emergency or a referral;
+  marketing = newsletters (Media24, Beehiiv, Substack), promotions, cold outreach, marketplace pitches (Alibaba, GoDaddy upsells, hosting, SaaS trials), dental association circulars (SADA, CAPP), software and app notifications (Grammarly, Adobe, Dropbox, Google, Microsoft), supplier promotions;
+  personal = the dentist's private life: LinkedIn, Facebook, Instagram, WhatsApp, Uber, Bolt, Booking.com, Airbnb, airlines, Skyscanner, online shops (Takealot, Bob Shop, Builders, NetFlorist), streaming, fitness, personal purchases and receipts;
+  other = anything that fits none of these.
+- important: true only if a person at the practice should read it soon. Money owed or due, bank and card statements, medical aid remittances and claim reports, patient or lab matters, regulatory notices and supplier invoices are important. Promotions, cold sales pitches, domain or hosting upsells, automatic renewal FYIs, social and app notifications, newsletters, personal mail, ride and travel receipts, and generic security or sign-in alerts are not important.
+- reason: one short plain sentence a receptionist would find useful, naming what the sender is (e.g. "GoDaddy domain upsell", "Investec payment confirmation", "Mediswitch daily claims report", "LinkedIn notification", "Uber ride receipt").
+- sender_kind: two or three words describing the sender type (e.g. "Dental lab", "Bank", "Medical aid switch", "Domain registrar", "Patient", "Social network", "Ride hailing", "Newsletter").
 
 Respond ONLY as JSON: {"emails":[{"uid":"...","group":"...","important":true,"reason":"...","sender_kind":"..."}]} with one entry per uid you were given.`;
 

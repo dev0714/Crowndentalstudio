@@ -8,7 +8,7 @@ export type AiVerdict = {
   senderKind: string;
 };
 
-const GROUPS = new Set<EmailGroupKey>(['appointments', 'lab', 'accounts', 'suppliers', 'patient_enquiries', 'marketing', 'other']);
+const GROUPS = new Set<EmailGroupKey>(['appointments', 'lab', 'accounts', 'suppliers', 'patient_enquiries', 'marketing', 'personal', 'other']);
 
 /** Parses the model's JSON reply into verdicts, dropping anything malformed or off-list. */
 export function parseAiVerdicts(content: string, allowedUids: string[]): AiVerdict[] {

@@ -16,4 +16,6 @@ test('marketing, promotions and system notices are not important', () => {
   assert.equal(classifyImportance(mail('Your weekly digest', 'noreply@dropbox.com'), 'other').important, false);
   assert.equal(classifyImportance(mail('New sign-in to your account', 'no-reply@accounts.google.com'), 'other').important, false);
   assert.equal(classifyImportance(mail('Hello', 'friend@gmail.com'), 'other').important, false);
+  assert.equal(classifyImportance(mail('Your Bolt ride on Friday', 'receipts@bolt.eu'), 'personal').important, false);
+  assert.equal(classifyImportance(mail('eMD Remittance Report', 'reports@e-md.co.za'), 'accounts').important, true);
 });

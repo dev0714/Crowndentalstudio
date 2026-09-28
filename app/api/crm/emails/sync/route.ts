@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const mode: SyncMode = body.mode === 'backfill' ? 'backfill' : body.mode === 'reclassify' ? 'reclassify' : 'daily';
 
-    const result = await runInboxSync(mode, `user:${user.id}`);
+    const limit = Number.isFinite(Number(body.limit)) ? Number(body.limit) : undefined;
+    const result = await runInboxSync(mode, `user:${user.id}`, { limit, timeBudgetMs: 240_000 });
 
     await writeAuditEntry({
       actor: user,

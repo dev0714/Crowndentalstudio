@@ -30,6 +30,8 @@ function toApiEmail(row: StoredEmail) {
     group: row.group_key,
     important: row.is_important,
     reason: row.importance_reason || '',
+    senderKind: row.sender_kind || '',
+    classifiedBy: row.classified_by || 'rules',
   };
 }
 

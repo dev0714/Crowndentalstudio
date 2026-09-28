@@ -31,3 +31,8 @@ CREATE TABLE IF NOT EXISTS public.inbox_sync_runs (
   triggered_by TEXT
 );
 CREATE INDEX IF NOT EXISTS inbox_sync_runs_started_idx ON public.inbox_sync_runs (started_at DESC);
+
+-- AI classification pass: which method sorted the row, and what kind of sender it is.
+ALTER TABLE public.inbox_emails ADD COLUMN IF NOT EXISTS classified_by TEXT NOT NULL DEFAULT 'rules';
+ALTER TABLE public.inbox_emails ADD COLUMN IF NOT EXISTS sender_kind TEXT;
+CREATE INDEX IF NOT EXISTS inbox_emails_classified_idx ON public.inbox_emails (classified_by);

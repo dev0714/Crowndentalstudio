@@ -4,9 +4,12 @@ import { getImapConfig } from '@/lib/settings/email-inbox';
 import { fetchRecentEmails } from '@/lib/email/imap-client';
 import { classifyEmail } from '@/lib/email/email-grouping';
 import { classifyImportance } from '@/lib/email/importance';
+import { classifyEmailsWithAi } from '@/lib/email/ai-classify';
 import {
+  applyClassification,
   finishSyncRun,
   getInboxSyncState,
+  listRuleClassifiedEmails,
   markBackfillComplete,
   markInboxSynced,
   recordSyncRun,
@@ -18,13 +21,14 @@ export const BACKFILL_DAYS = 92;
 const DAY_MS = 86_400_000;
 const DAILY_OVERLAP_MS = 2 * DAY_MS;
 
-export type SyncMode = 'backfill' | 'daily';
+export type SyncMode = 'backfill' | 'daily' | 'reclassify';
 
 export type SyncResult = {
   mode: SyncMode;
   since: string;
   fetched: number;
   stored: number;
+  ai_classified: number;
 };
 
 /**
@@ -34,6 +38,7 @@ export type SyncResult = {
  *   the (mailbox, uid) unique key makes re-storing harmless.
  */
 export async function runInboxSync(mode: SyncMode, triggeredBy: string): Promise<SyncResult> {
+  if (mode === 'reclassify') return reclassifyStoredEmails(triggeredBy);
   const config = await getImapConfig();
   if (!config) {
     throw new Error('Email inbox is not configured. Add your IMAP details in Settings.');
@@ -59,7 +64,7 @@ export async function runInboxSync(mode: SyncMode, triggeredBy: string): Promise
         const group = classifyEmail(email);
         const verdict = classifyImportance(email, group);
         const receivedAt = email.date && !Number.isNaN(new Date(email.date).getTime()) ? new Date(email.date).toISOString() : now.toISOString();
-        return {
+        const row: StoredEmailInput = {
           mailbox,
           uid: email.uid,
           from_name: email.from || null,
@@ -69,16 +74,66 @@ export async function runInboxSync(mode: SyncMode, triggeredBy: string): Promise
           group_key: group,
           is_important: verdict.important,
           importance_reason: verdict.reason,
+          classified_by: 'rules',
+          sender_kind: null,
         };
+        return row;
       });
+
+    // Second opinion from the model, which knows what the sender organisations are.
+    const aiVerdicts = await classifyEmailsWithAi(emails.map((email) => ({ uid: email.uid, from: email.from, fromEmail: email.fromEmail, subject: email.subject })));
+    let aiClassified = 0;
+    if (aiVerdicts) {
+      rows.forEach((row) => {
+        const verdict = aiVerdicts.get(row.uid);
+        if (!verdict) return;
+        row.group_key = verdict.group;
+        row.is_important = verdict.important;
+        row.importance_reason = verdict.reason || row.importance_reason;
+        row.sender_kind = verdict.senderKind || null;
+        row.classified_by = 'ai';
+        aiClassified += 1;
+      });
+    }
 
     const stored = await upsertStoredEmails(rows);
     await markInboxSynced(now);
     if (mode === 'backfill') await markBackfillComplete(now);
     await finishSyncRun(runId, { fetched: emails.length, stored });
-    return { mode, since: since.toISOString(), fetched: emails.length, stored };
+    return { mode, since: since.toISOString(), fetched: emails.length, stored, ai_classified: aiClassified };
   } catch (error) {
     await finishSyncRun(runId, { fetched: 0, stored: 0, error: error instanceof Error ? error.message : 'Sync failed' });
+    throw error;
+  }
+}
+
+/** Runs the model over stored emails that only have a rule-based verdict (for example, from a pull made before the AI pass existed). */
+async function reclassifyStoredEmails(triggeredBy: string): Promise<SyncResult> {
+  const now = new Date();
+  const runId = await recordSyncRun({ mode: 'reclassify', since: now, triggeredBy });
+  try {
+    const pending = await listRuleClassifiedEmails(400);
+    const verdicts = await classifyEmailsWithAi(
+      pending.map((row) => ({ uid: row.uid, from: row.from_name || '', fromEmail: row.from_email || '', subject: row.subject || '' })),
+    );
+    if (!verdicts) throw new Error('Add an OpenAI API key in Settings to sort emails with AI');
+    let updated = 0;
+    for (const row of pending) {
+      const verdict = verdicts.get(row.uid);
+      if (!verdict) continue;
+      await applyClassification(row.id, {
+        group_key: verdict.group,
+        is_important: verdict.important,
+        importance_reason: verdict.reason || row.importance_reason || '',
+        sender_kind: verdict.senderKind || null,
+        classified_by: 'ai',
+      });
+      updated += 1;
+    }
+    await finishSyncRun(runId, { fetched: pending.length, stored: updated });
+    return { mode: 'reclassify', since: now.toISOString(), fetched: pending.length, stored: updated, ai_classified: updated };
+  } catch (error) {
+    await finishSyncRun(runId, { fetched: 0, stored: 0, error: error instanceof Error ? error.message : 'Reclassify failed' });
     throw error;
   }
 }

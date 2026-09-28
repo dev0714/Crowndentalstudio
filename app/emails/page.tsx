@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { PaginationFooter } from '@/components/pagination-footer';
 import { describeRange, sliceForPage } from '@/lib/pagination';
 import { formatDateTimeSA, formatDateSA } from '@/lib/sa-formatting';
-import { Mail, Sparkles, RefreshCcw, DownloadCloud, CheckCircle2 } from 'lucide-react';
+import { Mail, Sparkles, RefreshCcw, DownloadCloud, CheckCircle2, ChevronRight } from 'lucide-react';
+import { EmailViewer } from '@/components/email-viewer';
 
 type ApiEmail = {
+  id: string;
   uid: string;
   from: string;
   fromEmail: string;
@@ -91,6 +93,7 @@ function EmailsContent() {
   const [group, setGroup] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = async (range = applied) => {
     setLoading(true);
@@ -399,7 +402,12 @@ function EmailsContent() {
                     ) : (
                       <div className="divide-y divide-slate-100">
                         {pageRows.map((email) => (
-                          <div key={email.uid} className="px-4 sm:px-5 py-3 hover:bg-cream/50">
+                          <button
+                            key={email.uid}
+                            type="button"
+                            onClick={() => setOpenId(email.id)}
+                            className="w-full text-left px-4 sm:px-5 py-3 hover:bg-cream/50 focus:outline-none focus-visible:bg-cream/70"
+                          >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
@@ -420,9 +428,12 @@ function EmailsContent() {
                                   {email.reason ? ` · ${email.reason}` : ''}
                                 </p>
                               </div>
-                              <p className="text-[11px] text-slate-400 flex-shrink-0">{email.date ? formatDateTimeSA(email.date) : ''}</p>
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <p className="text-[11px] text-slate-400">{email.date ? formatDateTimeSA(email.date) : ''}</p>
+                                <ChevronRight className="w-4 h-4 text-slate-300" />
+                              </div>
                             </div>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -454,6 +465,8 @@ function EmailsContent() {
           )}
         </>
       )}
+
+      <EmailViewer emailId={openId} onClose={() => setOpenId(null)} />
     </div>
   );
 }

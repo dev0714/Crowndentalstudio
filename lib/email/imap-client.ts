@@ -10,6 +10,7 @@ export type FetchedEmail = {
   fromEmail: string;
   subject: string;
   date: string;
+  messageId: string;
 };
 
 const FETCH_CHUNK = 250;
@@ -195,6 +196,7 @@ function parseFetchResponse(response: string): FetchedEmail[] {
       fromEmail: email,
       subject: decodeMimeWords(headers.subject || '(no subject)'),
       date: headers.date || '',
+      messageId: (headers['message-id'] || '').trim(),
     });
     marker.lastIndex = start + size;
   }
@@ -244,7 +246,7 @@ export async function fetchRecentEmails(
     for (let index = 0; index < selected.length; index += FETCH_CHUNK) {
       const chunk = selected.slice(index, index + FETCH_CHUNK);
       const fetchResponse = await session.run(
-        `UID FETCH ${chunk.join(',')} (BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])`,
+        `UID FETCH ${chunk.join(',')} (BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE MESSAGE-ID)])`,
       );
       emails.push(...parseFetchResponse(fetchResponse));
     }
@@ -256,6 +258,33 @@ export async function fetchRecentEmails(
         return Number.isNaN(time) ? true : time >= cutoff;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  } finally {
+    session.close();
+  }
+}
+
+const BODY_LIMIT_BYTES = 1_048_576;
+
+/**
+ * Fetches one message's raw MIME source (first 1 MB) so it can be displayed.
+ * Large attachments beyond the limit are simply not downloaded.
+ */
+export async function fetchEmailBody(config: ImapConfig, uid: string): Promise<{ raw: string; size: number; truncated: boolean }> {
+  if (!/^\d+$/.test(uid)) throw new Error('Invalid message uid');
+  const session = await ImapSession.connect(config, 30000);
+  try {
+    await session.run(`LOGIN ${quote(config.user)} ${quote(config.password)}`);
+    await session.run(`SELECT ${quote(config.mailbox)}`);
+    const response = await session.run(`UID FETCH ${uid} (RFC822.SIZE BODY.PEEK[]<0.${BODY_LIMIT_BYTES}>)`);
+    const sizeMatch = response.match(/RFC822\.SIZE (\d+)/);
+    const size = sizeMatch ? Number(sizeMatch[1]) : 0;
+    const literal = response.match(/BODY\[\](?:<\d+>)? \{(\d+)\}\r\n/);
+    if (!literal || literal.index == null) {
+      throw new Error('The mail server did not return the message body');
+    }
+    const start = literal.index + literal[0].length;
+    const raw = response.slice(start, start + Number(literal[1]));
+    return { raw, size, truncated: size > BODY_LIMIT_BYTES };
   } finally {
     session.close();
   }

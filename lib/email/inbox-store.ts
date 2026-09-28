@@ -15,6 +15,25 @@ export type StoredEmail = {
   importance_reason: string | null;
   classified_by?: 'rules' | 'ai';
   sender_kind?: string | null;
+  message_id?: string | null;
+};
+
+export type StoredEmailDetail = StoredEmail & {
+  body_text: string | null;
+  body_html: string | null;
+  body_fetched_at: string | null;
+  has_attachments: boolean;
+};
+
+export type StoredReply = {
+  id: string;
+  to_email: string;
+  subject: string;
+  body_text: string;
+  resend_id: string | null;
+  sent_by_name: string | null;
+  sent_at: string;
+  error: string | null;
 };
 
 export type StoredEmailInput = Omit<StoredEmail, 'id'> & { mailbox: string };
@@ -138,4 +157,49 @@ export async function countRuleClassifiedEmails() {
 export async function applyClassification(id: string, patch: { group_key: string; is_important: boolean; importance_reason: string; sender_kind: string | null; classified_by: 'rules' | 'ai' }) {
   const { error } = await supabaseServer.from('inbox_emails').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+export async function getStoredEmailById(id: string) {
+  const { data, error } = await supabaseServer
+    .from('inbox_emails')
+    .select('id, uid, from_name, from_email, subject, received_at, group_key, is_important, importance_reason, classified_by, sender_kind, message_id, body_text, body_html, body_fetched_at, has_attachments')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as StoredEmailDetail | null) || null;
+}
+
+export async function saveEmailBody(id: string, body: { text: string; html: string; hasAttachments: boolean; messageId: string }) {
+  const { error } = await supabaseServer
+    .from('inbox_emails')
+    .update({
+      body_text: body.text || null,
+      body_html: body.html || null,
+      has_attachments: body.hasAttachments,
+      ...(body.messageId ? { message_id: body.messageId } : {}),
+      body_fetched_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function listReplies(emailId: string) {
+  const { data, error } = await supabaseServer
+    .from('inbox_replies')
+    .select('id, to_email, subject, body_text, resend_id, sent_by_name, sent_at, error')
+    .eq('email_id', emailId)
+    .order('sent_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data || []) as StoredReply[];
+}
+
+export async function recordReply(input: { emailId: string; to: string; subject: string; body: string; resendId: string | null; sentBy: string | null; sentByName: string | null; error: string | null }) {
+  const { data, error } = await supabaseServer
+    .from('inbox_replies')
+    .insert([{ email_id: input.emailId, to_email: input.to, subject: input.subject, body_text: input.body, resend_id: input.resendId, sent_by: input.sentBy, sent_by_name: input.sentByName, error: input.error }])
+    .select('id, to_email, subject, body_text, resend_id, sent_by_name, sent_at, error')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as StoredReply;
 }

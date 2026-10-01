@@ -205,7 +205,7 @@ function EmailsContent() {
       }
       setSyncMessage(
         mode === 'backfill'
-          ? `Pulled ${result.fetched} emails from the last three months${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}. From now on the inbox is checked automatically every 15 minutes.`
+          ? `Pulled ${result.fetched} emails from the last three months${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}. From now on the inbox is checked automatically every 3 hours.`
           : mode === 'reclassify'
             ? `AI re-sorted ${result.stored} of ${result.fetched} emails.`
             : `Checked the inbox: ${result.fetched} email${result.fetched === 1 ? '' : 's'} in the sync window, ${result.stored} stored${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}.`,
@@ -526,8 +526,8 @@ function EmailsContent() {
 
               <p className="max-w-6xl mx-auto text-[11px] text-slate-400">
                 {backfillDone
-                  ? `The inbox is checked every 15 minutes and whenever this page is opened. Last check: ${sync?.last_synced_at ? formatDateTimeSA(sync.last_synced_at) : 'never'}.`
-                  : 'Once the three-month pull has run, the inbox is checked automatically every 15 minutes.'}
+                  ? `The inbox is checked every 3 hours and whenever this page is opened. Last check: ${sync?.last_synced_at ? formatDateTimeSA(sync.last_synced_at) : 'never'}.`
+                  : 'Once the three-month pull has run, the inbox is checked automatically every 3 hours.'}
                 {sync?.last_run?.error ? ` Last sync failed: ${sync.last_run.error}` : ''}
               </p>
             </>

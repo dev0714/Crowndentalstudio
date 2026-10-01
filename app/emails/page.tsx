@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -126,6 +126,33 @@ function EmailsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* Top up on arrival: if the last pull is older than 15 minutes, fetch new mail in the background. */
+  const autoChecked = useRef(false);
+  const [autoChecking, setAutoChecking] = useState(false);
+  useEffect(() => {
+    if (!data || autoChecked.current || syncing || notConfigured) return;
+    const last = data.sync?.last_synced_at ? new Date(data.sync.last_synced_at).getTime() : 0;
+    if (Date.now() - last < 15 * 60 * 1000) return;
+    autoChecked.current = true;
+    (async () => {
+      setAutoChecking(true);
+      try {
+        const response = await fetch('/api/crm/emails/sync', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'daily' }),
+        });
+        if (response.ok) await load();
+      } catch {
+        /* the scheduled pull will catch up */
+      } finally {
+        setAutoChecking(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
   const applyRange = (nextFrom: string, nextTo: string) => {
     setFrom(nextFrom);
     setTo(nextTo);
@@ -178,7 +205,7 @@ function EmailsContent() {
       }
       setSyncMessage(
         mode === 'backfill'
-          ? `Pulled ${result.fetched} emails from the last three months${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}. From now on the inbox is synced automatically every morning.`
+          ? `Pulled ${result.fetched} emails from the last three months${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}. From now on the inbox is checked automatically every 15 minutes.`
           : mode === 'reclassify'
             ? `AI re-sorted ${result.stored} of ${result.fetched} emails.`
             : `Checked the inbox: ${result.fetched} email${result.fetched === 1 ? '' : 's'} in the sync window, ${result.stored} stored${result.ai_classified ? `, ${result.ai_classified} sorted with AI` : ''}.`,
@@ -272,6 +299,12 @@ function EmailsContent() {
       {error && (
         <div className="max-w-6xl mx-auto rounded-xl border border-red-200 bg-red-50 p-4">
           <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
+      {autoChecking && (
+        <div className="max-w-6xl mx-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-500 flex items-center gap-2">
+          <RefreshCcw className="w-3.5 h-3.5 animate-spin text-teal" /> Checking the inbox for new mail…
         </div>
       )}
 
@@ -493,8 +526,8 @@ function EmailsContent() {
 
               <p className="max-w-6xl mx-auto text-[11px] text-slate-400">
                 {backfillDone
-                  ? `The inbox is pulled automatically every morning at 06:00. Last automatic or manual check: ${sync?.last_synced_at ? formatDateTimeSA(sync.last_synced_at) : 'never'}.`
-                  : 'Once the three-month pull has run, the inbox is synced automatically every morning at 06:00.'}
+                  ? `The inbox is checked every 15 minutes and whenever this page is opened. Last check: ${sync?.last_synced_at ? formatDateTimeSA(sync.last_synced_at) : 'never'}.`
+                  : 'Once the three-month pull has run, the inbox is checked automatically every 15 minutes.'}
                 {sync?.last_run?.error ? ` Last sync failed: ${sync.last_run.error}` : ''}
               </p>
             </>

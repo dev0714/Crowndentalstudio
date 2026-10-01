@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 /**
- * Pull of the practice inbox every 15 minutes, scheduled in vercel.json. Vercel sends
+ * Pull of the practice inbox every 3 hours, scheduled in vercel.json. Vercel sends
  * `Authorization: Bearer <CRON_SECRET>` when that environment variable is set;
  * without the secret configured the route refuses to run.
  */
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const result = await runInboxSync(mode, 'cron');
     // Anything still sorted by rules only (e.g. after an AI outage) gets the model's verdict now.
     const after = await getInboxSyncState();
-    const reclassified = after.awaiting_ai > 0 ? await runInboxSync('reclassify', 'cron', { limit: 300, timeBudgetMs: 90_000 }).catch(() => null) : null;
+    const reclassified = after.awaiting_ai > 0 ? await runInboxSync('reclassify', 'cron', { limit: 600, timeBudgetMs: 150_000 }).catch(() => null) : null;
     return NextResponse.json({ data: { ...result, reclassified } });
   } catch (error) {
     console.error('Scheduled inbox sync failed:', error);
